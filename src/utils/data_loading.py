@@ -1,5 +1,4 @@
 import numpy as np
-import os
 import pandas as pd
 from typing import Tuple
 
@@ -8,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from src.datasets import BCDataset
 
 
-def load_data(data_path: str = '../data/replay_buffer.npz') -> Tuple[np.array, np.array, np.array, np.array, np.array]:
+def load_data_from_npz_file(data_path: str = '../data/replay_buffer.npz') -> Tuple[np.array, np.array, np.array, np.array, np.array]:
     """
     Loads data from a saved file in NumPy .npz format.
 
@@ -39,8 +38,11 @@ def load_data(data_path: str = '../data/replay_buffer.npz') -> Tuple[np.array, n
     return observations, next_observations, actions, rewards, dones
 
 
-def load_data_as_df(observations: np.array, next_observations: np.array, actions: np.array,
-                rewards: np.array, dones) -> pd.DataFrame:
+def load_data_as_df_from_np_arrays(observations: np.array,
+                                next_observations: np.array,
+                                actions: np.array,
+                                rewards: np.array,
+                                dones: np.array) -> pd.DataFrame:
     """
     Organizes the data into a pd.DataFrame
 
@@ -90,7 +92,8 @@ def load_data_as_df(observations: np.array, next_observations: np.array, actions
     return data_df
 
 
-def get_BC_data_loaders(observations: np.array, actions: np.array,
+def get_BC_data_loaders(observations: np.array,
+                        actions: np.array,
                         train: float = 0.70,
                         test: float = 0.15,
                         validation: float = 0.15,
