@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 
 
@@ -49,8 +50,9 @@ def _plot_hist_multiple_axes(data_dict: dict, num_columns: int = 2, f_size: tupl
     
     fig, axes = plt.subplots(ncols=num_columns, nrows=num_rows, figsize=f_size)
     axes = axes.flatten()
-    
-    for ax, data_name in zip(axes, data_dict.keys()):
+
+    ax_id = 0
+    for i, ax, data_name in enumerate(zip(axes, data_dict.keys())):
         if custom_title is None:
             ax.set_title('Histogram: '+ data_name)
         else:
@@ -58,7 +60,11 @@ def _plot_hist_multiple_axes(data_dict: dict, num_columns: int = 2, f_size: tupl
         ax.set_ylabel('Frequency')
         ax.set_xlabel('Data')
         ax.hist(data_dict[data_name], **hist_kwargs)
-    
+        ax_id = i
+
+
+    for j in range(ax_id, len(axes)):
+        axes[j].set_visible(False)
     fig.tight_layout()
     
     return fig
@@ -97,7 +103,7 @@ def plot_hexbin(data_dict: dict, num_columns: int = 2, f_size: tuple = (16,9)) -
         ax.set_ylim(y_min, y_max)
         
         fig.colorbar(hb, ax=ax, orientation='vertical')
-    
+
     fig.tight_layout()
     
     return fig
@@ -134,12 +140,21 @@ def plot_boxplots_df(data: pd.DataFrame, num_columns: int = 4, f_size: tuple = (
         else:
             data.boxplot(column=[column], ax=axes[i], **boxplot_kwargs)
         axes[i].set_title(f'Boxplot of {column}')
+
+
+    for j in range(i, len(axes)):
+        axes[j].set_visible(False)
     fig.tight_layout()
     return fig
 
 
-def plot_boxplots_compare_df(df1_name: str, df2_name: str, df1: pd.DataFrame, df2: pd.DataFrame, num_columns: int = 4,
-                            f_size: tuple = (16, 9), custom_title: str = None, boxplot_kwargs: dict = dict()) -> plt.Figure:
+def plot_boxplots_compare_df(df1_name: str, df2_name: str,
+                             df1: pd.DataFrame,
+                             df2: pd.DataFrame,
+                             num_columns: int = 4,
+                             f_size: tuple = (16, 9),
+                             custom_title: str = None,
+                             boxplot_kwargs: dict = dict()) -> plt.Figure:
     """
     Plots boxplots for each column(feature) of two datasets side by side
 
@@ -169,84 +184,86 @@ def plot_boxplots_compare_df(df1_name: str, df2_name: str, df1: pd.DataFrame, df
         fig.suptitle(f'Boxplots')
     else:
         fig.suptitle(custom_title)
-    
+
+    ax_id = -1
     for i, column in enumerate(df1.columns):
-        if boxplot_kwargs is None:
-            df_merged.boxplot(column=[df1_name+'_'+column, df2_name+'_'+column], ax=axes[i])
-        else:
-            df_merged.boxplot(column=[df1_name+'_'+column, df2_name+'_'+column], **boxplot_kwargs)
+        df_merged.boxplot(column=[df1_name+'_'+column, df2_name+'_'+column], ax=axes[i], **boxplot_kwargs)
         axes[i].set_title(f'Boxplot of {column}')
+        ax_id = i
+
+    for j in range(ax_id, len(axes)):
+        axes[j].set_visible(False)
     fig.tight_layout()
     return fig
 
 # a helper function to determine whether to plot a KDE or Histogram for the given pd.DataFrame column
 def is_continuous(series):
-    return pd.api.types.is_numeric_dtype(series) and series.nunique() > 10 
+    return pd.api.types.is_numeric_dtype(series) and series.nunique() > 10
 
 
-def plot_univariate_analysis(df1: pd.DataFrame, df2: pd.DataFrame, df1_name: str = 'Dataset 1',
-        df2_name: str = 'Dataset 2', num_columns=3, custom_title='Univariate Analysis', f_size: tuple = (18, 21),
-        kde_kwargs: dict = dict(), hist_kwargs: dict = dict()) -> plt.Figure:
-    """
-    Plots a univariate analysis for each column of the two datasets first separately and then both on a single axis.
-    KDE is used for continuous data and Histogram for discrete data (discrete <= 10 unique values see is_continuous function).
+def plot_univariate_analysis(
+        df1: pd.DataFrame,
+        df2: pd.DataFrame,
+        df1_name: str = 'Dataset 1',
+        df2_name: str = 'Dataset 2',
+        num_columns=3,
+        custom_title='Univariate Analysis',
+        f_size: tuple = (18, 21),
+        kde_kwargs: dict = dict(),
+        hist_kwargs: dict = dict(),
+) -> plt.Figure:
+    def is_continuous(series):
+        return series.nunique() > 10 and np.issubdtype(series.dtype, np.number)
 
-    Accepts:
-        - 'df1' (pd.DataFrame): the first dataset where each column is a feature
-        - 'df2' (pd.DataFrame): the second dataset where each column is a feature
-        - 'df1_name' (str): the name (prefix) of the first dataset
-        - 'df2_name' (str): the name (prefix) of the second dataset
-        - 'num_columns' (int): number of columns in the subplot grid
-        - 'f_size' (tuple): the size of the fig (width, height)
-        - `custom_title` (str): a custom title for the plot (None for some default title)
-        - `kde_kwargs` (dict): additional arguments to pass to `.plot(kind='kde'...)`
-        - `hist_kwargs` (dict): additional arguments to pass to `.plot(kind='kde'...)`
-
-    Returns:
-        - `plt.Figure`: a Matplotlib figure with the univariate analysis of the two datasets
-    """
-    num_rows = int(np.ceil(len(df1.columns)*3/num_columns))
-    
+    num_rows = int(np.ceil(len(df1.columns) * 3 / num_columns))
     fig, axes = plt.subplots(ncols=num_columns, nrows=num_rows, figsize=f_size)
     axes = axes.flatten()
-    
-    df1_renamed = df1.rename(columns={col: f"{df1_name}_{col}" for col in df1.columns})
-    df2_renamed = df2.rename(columns={col: f"{df2_name}_{col}" for col in df2.columns})
-    df_merged = pd.concat([df1_renamed, df2_renamed], axis=1)
-    
-    if custom_title is None:
-        fig.suptitle(f'Univariate Analysis')
-    else:
-        fig.suptitle(custom_title)
-    
+
+    if custom_title:
+        fig.suptitle(custom_title, fontsize=16)
+
     i = 0
-    for column in df1.columns:
-        if is_continuous(df_merged[df1_name + '_' + column]) and is_continuous(df_merged[df2_name + '_' + column]):
-            df1[[column]].plot(kind="kde", ax=axes[i], **kde_kwargs)
-            axes[i].set_title(f'KDE: {column} ({df1_name} only)')
-            i += 1
-            df2[[column]].plot(kind="kde", ax=axes[i], **kde_kwargs)
-            axes[i].set_title(f'KDE: {column} ({df2_name} only)')
-            i += 1
-            df_merged[[df1_name + '_' + column, df2_name + '_' + column]].plot(kind="kde", ax=axes[i], **kde_kwargs)
-            axes[i].set_title(f'KDE: {column} (both datasets)')
-            i += 1
+    for col in df1.columns:
+        s1 = df1[col].dropna()
+        s2 = df2[col].dropna()
+        continuous = is_continuous(s1) and is_continuous(s2)
+
+        # dataset 1
+        ax = axes[i]
+        i += 1
+        if continuous:
+            sns.kdeplot(s1, ax=ax, label=df1_name, **kde_kwargs)
         else:
-            df1[[column]].plot(kind="hist", ax=axes[i], **hist_kwargs)
-            axes[i].set_title(f'Histogram: {column} ({df1_name} only)')
-            i += 1
-            
-            df2[[column]].plot(kind='hist', ax=axes[i], **hist_kwargs)
-            axes[i].set_title(f'Histogram: {column} ({df2_name} only)')
-            i += 1
-            
-            df_merged[[df1_name + '_' + column, df2_name + '_' + column]].plot(kind="hist", ax=axes[i], **hist_kwargs)
-            axes[i].set_title(f'Histogram: {column} (both datasets)')
-        
-    for ax in axes:
-        ax.set_xlabel('Values')
-        
-    fig.tight_layout()
+            ax.hist(s1, **hist_kwargs)
+        ax.set_title(f'{col} ({df1_name})')
+        ax.grid(True)
+
+        # dataset 2
+        ax = axes[i]
+        i += 1
+        if continuous:
+            sns.kdeplot(s2, ax=ax, label=df2_name, color='orange', **kde_kwargs)
+        else:
+            ax.hist(s2, color='orange', **hist_kwargs)
+        ax.set_title(f'{col} ({df2_name})')
+        ax.grid(True)
+
+        # both datasets
+        ax = axes[i]
+        i += 1
+        if continuous:
+            sns.kdeplot(s1, ax=ax, label=df1_name, **kde_kwargs)
+            sns.kdeplot(s2, ax=ax, label=df2_name, **kde_kwargs)
+        else:
+            ax.hist([s1, s2], label=[df1_name, df2_name], **hist_kwargs)
+        ax.legend()
+        ax.set_title(f'{col} (Both)')
+        ax.grid(True)
+
+    for j in range(i, len(axes)):
+        axes[j].set_visible(False)
+
+    plt.tight_layout()
     return fig
 
 
@@ -292,3 +309,37 @@ def plot_legs_bar(df1: pd.DataFrame, df2: pd.DataFrame, df1_name: str = 'Dataset
     
     fig.tight_layout()
     return fig
+
+
+def plot_feature_importance_heatmaps(f_imp_stats: dict) -> plt.Figure:
+    feature_importance_fig, axes = plt.subplots(
+        nrows=1, ncols=len(f_imp_stats), figsize=(18, 9), sharey=True
+    )
+
+    for i, (f_name, f_data) in enumerate(f_imp_stats.items()):
+        hm = sns.heatmap(
+            data=f_data.drop(columns=['feature']),
+            yticklabels=f_data['feature'],
+            annot=True,
+            fmt='.2f',
+            ax=axes[i],
+            cbar=False,
+            cmap='YlOrRd'
+        )
+        axes[i].set_yticklabels(f_data['feature'], rotation=30)
+
+        cax = axes[i].inset_axes([0.15, 1.02, 0.7, 0.03])
+        plt.colorbar(hm.collections[0], cax=cax, orientation='horizontal')
+        cax.xaxis.set_ticks_position('top')
+        cax.xaxis.set_label_position('top')
+
+        axes[i].set_title(f'Normalization type: {f_name}', pad=40)
+
+
+    feature_importance_fig.text(0.04, 0.5, 'Features', va='center', rotation='vertical')
+
+    feature_importance_fig.tight_layout(rect=[0.08, 0, 1, 1])
+    plt.subplots_adjust(left=0.15, wspace=0.3)
+
+    return feature_importance_fig
+
