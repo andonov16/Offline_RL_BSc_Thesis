@@ -7,7 +7,7 @@ from gymnasium.envs.registration import register
 
 
 from src.utils.config_managing import *
-from src.behavior_cloning import BC
+from src.architectures import BC
 
 env_test_params = load_env_test_config_file()
 with open(f"../logs/rb_bc/best_hyperparams.txt", "r") as file:

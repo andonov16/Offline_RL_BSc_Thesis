@@ -4,7 +4,7 @@ from itertools import product
 from src.utils.data_loading import *
 from src.utils.config_managing import *
 from src.utils.training import *
-from src.behavior_cloning import BC
+from src.architectures import BC
 
 # import the corresponding config dict
 bc_config_dict = load_bc_config_file('../config/rb_bc_config.json')
