@@ -39,6 +39,9 @@ class BC(torch.nn.Module):
     def get_action_probs(self, x: torch.Tensor) -> torch.Tensor:
         return torch.sigmoid(self.network(x))
 
+    def get_action(self, x:torch.Tensor) -> int:
+        return int(torch.argmax(self.get_action_probs(x)))
+
 
 if __name__ == "__main__":
     x_dummy = torch.tensor([0.45, 23, 11.43, 3, 5], dtype=torch.float32)

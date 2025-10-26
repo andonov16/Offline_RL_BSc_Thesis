@@ -1,0 +1,40 @@
+experiment:
+  name: "bc_optimization"
+  seed: 16
+  n_optuna_trials: 120
+  direction: "maximize"
+  max_epochs: 100
+  early_stopping_criterion_epochs: 5
+
+search_space:
+  dropout:
+    type: "float"
+    low: 0.0
+    high: 0.5
+    step: 0.05
+
+  lr:
+    type: "float"
+    low: 0.000001
+    high: 0.001
+
+  num_hidden_neurons:
+    type: "int"
+    low: 32
+    high: 480
+    step: 32
+
+  num_hidden_layers:
+    type: "int"
+    low: 1
+    high: 7
+
+  weight_decay:
+    type: "float"
+    low: 0.000001
+    high: 0.001
+
+runtime:
+  device: "cuda"
+  best_model_dir: "../models"
+  log_dir: "../logs"
