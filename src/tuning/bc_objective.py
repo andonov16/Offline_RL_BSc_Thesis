@@ -1,56 +1,9 @@
-import optuna
-import copy
 import torch
-import os
+import optuna
 import numpy as np
 from tqdm import tqdm
-from sklearn.utils.class_weight import compute_class_weight
-
+from src.tuning.base_objective import BaseObjectiveTorch
 from src.architectures import BC
-
-
-class BaseObjectiveTorch:
-    def __init__(self,
-                 train_loader: torch.utils.data.DataLoader,
-                 device: torch.device,
-                 model_dir: str = '../models',
-                 logs_dir: str = '../logs',
-                 scoring_fn: callable = None,
-                 maximize_score: bool = True):
-        self.train_loader = train_loader
-        self.model_dir = model_dir
-        self.log_dir = logs_dir
-        self.scoring_fn = scoring_fn
-        self.maximize_score = maximize_score
-        self.device = device
-
-        self.best_model = None
-        if maximize_score:
-            self.best_score = -torch.inf
-        else:
-            self.best_score = torch.inf
-
-        class_weights = compute_class_weight(
-            class_weight='balanced',
-            classes=torch.unique(train_loader.dataset.actions).cpu().detach().numpy(),
-            y=train_loader.dataset.actions.cpu().detach().numpy()
-        )
-        class_weights = torch.tensor(class_weights, dtype=torch.float)
-        self.loss_func = torch.nn.CrossEntropyLoss(weight=class_weights.to(self.device))
-
-
-    def __call__(self, trial: optuna.Trial) -> float:
-        raise NotImplemented()
-
-
-    def __save_best_model__(self, model: torch.nn.Module, model_name: str = 'best_model') -> None:
-        os.makedirs(self.model_dir, exist_ok=True)
-        model_path = os.path.join(self.model_dir, f'{model_name}.pt')
-
-        model_cpu = copy.deepcopy(model).to('cpu').eval()
-
-        scripted_model = torch.jit.script(model_cpu)
-        scripted_model.save(model_path)
 
 
 class BCObjectiveTorch(BaseObjectiveTorch):
@@ -89,14 +42,18 @@ class BCObjectiveTorch(BaseObjectiveTorch):
 
         # define model and optimizer
         model = BC(input_neurons=self.n_features,
-                   hidden_neurons=hyperparam_suggestions['num_hidden_neurons'],
-                   num_hidden_layers=hyperparam_suggestions['num_hidden_layers'],
-                   out_neurons=4,
-                   dropout=hyperparam_suggestions['dropout'])
+                hidden_neurons=hyperparam_suggestions['num_hidden_neurons'],
+                num_hidden_layers=hyperparam_suggestions['num_hidden_layers'],
+                out_neurons=4,
+                dropout=hyperparam_suggestions['dropout'])
         model.to(self.device)
-        optimizer = torch.optim.Adam(model.parameters(),
-                                     lr=hyperparam_suggestions['lr'],
-                                     weight_decay=hyperparam_suggestions['weight_decay'])
+
+        optimizer = torch.optim.Adam(
+            model.parameters(),
+            lr=hyperparam_suggestions['lr'],
+            weight_decay=hyperparam_suggestions['weight_decay']
+        )
+
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
             mode='max' if self.maximize_score else 'min',
@@ -104,10 +61,12 @@ class BCObjectiveTorch(BaseObjectiveTorch):
             patience=4
         )
 
-        # train the model for the given number of epochs (+ early stopping logic)
+        # early stopping tracking for this trial
+        best_trial_score = float('-inf') if self.maximize_score else float('inf')
         epoches_without_improvement = 0
         score = None
-        for epoch in tqdm(range(self.max_epochs), desc='Max Epochs'):
+
+        for epoch in tqdm(range(self.max_epochs), desc=f'Trial {trial.number} Epochs'):
             avg_train_loss_per_batch = self.__train_model_single_epoch__(model, optimizer)
 
             # evaluate the model
@@ -115,61 +74,80 @@ class BCObjectiveTorch(BaseObjectiveTorch):
             scheduler.step(score)
             trial.report(score, epoch)
 
+            # Optuna pruning
             if trial.should_prune():
                 raise optuna.TrialPruned()
 
-            # save it sa best if the model`s score is better than the current best one
-            if self.maximize_score and score >= self.best_score:
-                self.best_score = score
-                epoches_without_improvement = 0
-                self.__save_best_model__(model=model, model_name=self.model_name)
-            elif not self.maximize_score and score <= self.best_score:
-                self.best_score = score
+            # Early stopping: compare with trial-specific best
+            improved = (score > best_trial_score) if self.maximize_score else (score < best_trial_score)
+
+            if improved:
+                best_trial_score = score
                 epoches_without_improvement = 0
             else:
                 epoches_without_improvement += 1
-                if epoches_without_improvement >= self.early_stopping_criterion_epochs:
-                    break
+
+            if epoches_without_improvement >= self.early_stopping_criterion_epochs:
+                break
+
+        # Update global best model if this trial achieved a new record
+        if (self.maximize_score and best_trial_score > self.best_score) or \
+        (not self.maximize_score and best_trial_score < self.best_score):
+            self.best_score = best_trial_score
+            self.__save_best_model__(model=model, model_name=self.model_name)
 
         del model, optimizer
         torch.cuda.empty_cache()
-        return score
+
+        return best_trial_score
+
 
     def _get_hyperparam_suggestions(self, trial: optuna.Trial) -> dict:
         ss = self.config["search_space"]
+        suggestions = {}
 
-        dropout = trial.suggest_float(
-            name="dropout", low=ss["dropout"]["low"], high=ss["dropout"]["high"]
-        )
-        lr = trial.suggest_float(
-            name="lr", low=ss["lr"]["low"], high=ss["lr"]["high"], log=True
-        )
-        num_hidden_neurons = trial.suggest_int(
-            name="num_hidden_neurons",
-            low=ss["num_hidden_neurons"]["low"],
-            high=ss["num_hidden_neurons"]["high"],
-            step=ss["num_hidden_neurons"].get("step", 1)
-        )
-        num_hidden_layers = trial.suggest_int(
-            name="num_hidden_layers",
-            low=ss["num_hidden_layers"]["low"],
-            high=ss["num_hidden_layers"]["high"]
-        )
-        weight_decay = trial.suggest_float(
-            name="weight_decay",
-            low=ss["weight_decay"]["low"],
-            high=ss["weight_decay"]["high"],
-            log=True
-        )
+        for name, cfg in ss.items():
+            # --- Case 1: Fixed parameter (for retraining phase)
+            if "value" in cfg:
+                suggestions[name] = cfg["value"]
+                continue
 
-        result = {
-            "dropout": dropout,
-            "lr": lr,
-            "num_hidden_neurons": num_hidden_neurons,
-            "num_hidden_layers": num_hidden_layers,
-            "weight_decay": weight_decay,
-        }
-        return result
+            # --- Case 2: Normal Optuna-sampled parameter
+            param_type = cfg.get("type", "float")
+
+            if param_type == "float":
+                # Build kwargs dynamically (avoid passing missing keys)
+                kwargs = {
+                    "name": name,
+                    "low": float(cfg["low"]),
+                    "high": float(cfg["high"]),
+                }
+                if "step" in cfg:
+                    kwargs["step"] = float(cfg["step"])
+                if "log" in cfg:
+                    kwargs["log"] = bool(cfg["log"])
+
+                suggestions[name] = trial.suggest_float(**kwargs)
+
+            elif param_type == "int":
+                kwargs = {
+                    "name": name,
+                    "low": int(cfg["low"]),
+                    "high": int(cfg["high"]),
+                }
+                if "step" in cfg:
+                    kwargs["step"] = int(cfg["step"])
+                # Optuna’s suggest_int can also take `log`, but you rarely use it
+                if "log" in cfg:
+                    kwargs["log"] = bool(cfg["log"])
+
+                suggestions[name] = trial.suggest_int(**kwargs)
+
+            else:
+                raise ValueError(f"Unsupported parameter type '{param_type}' for '{name}'")
+
+        return suggestions
+
 
     def __train_model_single_epoch__(self, model: torch.nn.Module, optimizer: torch.optim.Optimizer) -> float:
         model.train()

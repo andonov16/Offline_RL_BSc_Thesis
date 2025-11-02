@@ -40,7 +40,7 @@ class BC(torch.nn.Module):
         return torch.sigmoid(self.network(x))
 
     def get_action(self, x:torch.Tensor) -> int:
-        return int(torch.argmax(self.get_action_probs(x)))
+        return torch.argmax(self.get_action_probs(x), dim=1)
 
 
 if __name__ == "__main__":
