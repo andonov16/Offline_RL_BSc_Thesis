@@ -15,7 +15,7 @@ class BC(torch.nn.Module):
 
         # Add the first (input) layer + activation function
         layers = [torch.nn.Linear(input_neurons, hidden_neurons),
-                  torch.nn.BatchNorm1d(hidden_neurons),
+                  torch.nn.LayerNorm(hidden_neurons),
                   activation_function()]
         if dropout > 0:
             layers.append(torch.nn.Dropout(dropout))
@@ -23,7 +23,7 @@ class BC(torch.nn.Module):
         # Add the hidden layers
         for _ in range(num_hidden_layers):
             layers.append(torch.nn.Linear(hidden_neurons, hidden_neurons))
-            layers.append(torch.nn.BatchNorm1d(hidden_neurons))
+            layers.append(torch.nn.LayerNorm(hidden_neurons))
             layers.append(activation_function())
             if dropout > 0:
                 layers.append(torch.nn.Dropout(dropout))
@@ -37,10 +37,10 @@ class BC(torch.nn.Module):
         return self.network(x)
 
     def get_action_probs(self, x: torch.Tensor) -> torch.Tensor:
-        return torch.sigmoid(self.network(x))
+        return torch.softmax(self.network(x), dim=-1)
 
     def get_action(self, x:torch.Tensor) -> int:
-        return torch.argmax(self.get_action_probs(x), dim=1)
+        return torch.argmax(self.get_action_probs(x), dim=-1)
 
 
 if __name__ == "__main__":

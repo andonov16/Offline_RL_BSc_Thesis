@@ -11,12 +11,10 @@ class BaseObjectiveTorch:
                  device: torch.device,
                  model_dir: str = '../models',
                  logs_dir: str = '../logs',
-                 scoring_fn: callable = None,
-                 maximize_score: bool = True):
+                 maximize_score: bool = False):
         self.train_loader = train_loader
         self.model_dir = model_dir
         self.log_dir = logs_dir
-        self.scoring_fn = scoring_fn
         self.maximize_score = maximize_score
         self.device = device
 

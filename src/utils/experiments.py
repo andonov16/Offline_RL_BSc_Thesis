@@ -8,6 +8,7 @@ import os
 import yaml
 import optuna
 import pandas as pd
+import numpy as np
 
 from src.datasets import BCDataset
 from src.normalization import NormalizationModule
@@ -44,18 +45,33 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
     with open('../config/bc_experiments_config.yaml', 'r') as f:
         bc_experiments_config = yaml.safe_load(f)
 
+    import random
+    seed = experiments_config['experiment']['seed']
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
     # Phase 1:
     print('='*100)
     print('Phase 1:')
-    train_df_stratified, _ = train_test_split(
-        train_df,
-        stratify=train_df['action'],
-        train_size=bc_experiments_config['experiment']['stratified_train_set_ratio'],
-        random_state=experiments_config['experiment']['seed']
-    )
+    if bc_experiments_config['experiment']['stratified_train_set_ratio'] != 1:
+        train_df_stratified, _ = train_test_split(
+            train_df,
+            stratify=train_df['action'],
+            train_size=bc_experiments_config['experiment']['stratified_train_set_ratio'],
+            random_state=experiments_config['experiment']['seed']
+        )
+    else:
+        train_df_stratified = train_df
 
-    X_train, y_train = prepare_data(df=train_df_stratified, selected_features=selected_features, norm_script=norm_technique_script)
-    X_valid, y_valid = prepare_data(df=valid_df, selected_features=selected_features, norm_script=norm_technique_script)
+    X_train, y_train = prepare_data(df=train_df_stratified,
+                                    selected_features=selected_features,
+                                    norm_script=norm_technique_script)
+    X_valid, y_valid = prepare_data(df=valid_df,
+                                    selected_features=selected_features,
+                                    norm_script=norm_technique_script)
 
     train_dataset = BCDataset(states=X_train, actions=y_train)
     valid_dataset = BCDataset(states=X_valid, actions=y_valid)
@@ -92,7 +108,6 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
         model_dir=os.path.join(bc_experiments_config['runtime']['best_model_dir'], f'{dataset_name}/'),
         model_name=output_model_name + '_stratified',
         device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
-        scoring_fn=balanced_accuracy_score,
         num_features=X_train.shape[1],
         config=bc_experiments_config,
         max_epochs=bc_experiments_config['experiment']['max_epochs_phase_1']
@@ -102,7 +117,7 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
     study_name = f'bc_{dataset_name}_{norm_technique_name.lower().replace(" ", "_")}_data_study'
     study = optuna.create_study(
         study_name=study_name,
-        direction='maximize',
+        direction='minimize',
         storage=storage,
         pruner=pruner,
         load_if_exists=True
@@ -126,12 +141,12 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
     print('=' * 100)
     print('Phase 2:')
 
-    X_train, y_train = prepare_data(
-        df=train_df,
+    X_train_valid, y_train_valid = prepare_data(
+        df=pd.concat([train_df, valid_df], ignore_index=True),
         selected_features=selected_features,
         norm_script=norm_technique_script
     )
-    train_dataset = BCDataset(states=X_train, actions=y_train)
+    train_dataset = BCDataset(states=X_train_valid, actions=y_train_valid)
     train_dataloader = DataLoader(
         dataset=train_dataset,
         batch_size=bc_experiments_config['experiment']['batch_size_phase_2'],
@@ -141,6 +156,8 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
         persistent_workers=True,
         drop_last=True
     )
+
+    valid_dataset = BCDataset(states=X_train_valid, actions=y_train_valid)
     valid_dataloader = DataLoader(dataset=valid_dataset,
                                   batch_size=bc_experiments_config['experiment']['batch_size_phase_2'],
                                   shuffle=False,
@@ -161,7 +178,7 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
     refined_study_name = f"{phase1_study_name}_refined"
     refined_study = optuna.create_study(
         study_name=refined_study_name,
-        direction="maximize",
+        direction="minimize",
         storage=refined_storage,
         load_if_exists=True,
     )
@@ -200,15 +217,17 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
             model_dir=os.path.join(bc_experiments_config['runtime']['best_model_dir'], f"{dataset_name}/"),
             model_name=f"{output_model_name}_refined",
             device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-            scoring_fn=balanced_accuracy_score,
-            num_features=X_train.shape[1],
+            num_features=X_train_valid.shape[1],
             config=refined_config,
             max_epochs=refined_config['experiment']['max_epochs_phase_2']
         )
 
+        # Reset best-loss tracker for Phase 2
+        objective_full.overall_best_loss = float('inf')
+
         # Train deterministically (no Optuna optimization)
         final_score = objective_full(optuna.trial.FixedTrial(params))
-        print(f"Finished retraining (rank {i+1}) — Final balanced accuracy: {final_score:.4f}")
+        print(f'Finished retraining (rank {i+1}) — Final loss: {final_score:.4f}')
 
 
         # --- Save this retraining result in the refined Optuna DB ---
@@ -225,4 +244,4 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
         torch.cuda.empty_cache()
 
     print('=' * 100)
-    print(f"Two-phase optimization complete. Phase 2 results saved to: {refined_storage}")
+    print(f'Two-phase optimization complete. Phase 2 results saved to: {refined_storage}')
