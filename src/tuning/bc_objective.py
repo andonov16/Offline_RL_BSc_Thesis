@@ -92,6 +92,7 @@ class BCObjectiveTorch(BaseObjectiveTorch):
                 epochs_without_improvement = 0
                 # save best model during trial
                 if self.overall_best_loss > curr_best_eval_loss:
+                    self.best_model = model
                     self.__save_best_model__(model=model, model_name=self.model_name)
                     self.overall_best_loss = curr_best_eval_loss
             else:
@@ -99,6 +100,8 @@ class BCObjectiveTorch(BaseObjectiveTorch):
 
             if epochs_without_improvement >= self.early_stopping_criterion_epochs:
                 break
+
+        self.__evaluate_model_single_epoch_accuracy__(self.best_model)
 
         # Save train and eval losses in trial user attributes
         trial.set_user_attr('train_losses', train_losses)
@@ -199,3 +202,30 @@ class BCObjectiveTorch(BaseObjectiveTorch):
         del losses
         torch.cuda.empty_cache()
         return avg_loss
+
+    def __evaluate_model_single_epoch_accuracy__(self, model: torch.nn.Module) -> float:
+        model.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for X, Y_true in self.eval_loader:
+                X, Y_true = X.to(self.device), Y_true.to(self.device)
+                Y_pred = model(X)
+
+                # Get predicted classes
+                Y_pred_classes = torch.argmax(Y_pred, dim=1)
+
+                # Count correct predictions
+                correct += (Y_pred_classes == Y_true).sum().item()
+                total += Y_true.size(0)
+
+                del X, Y_true, Y_pred, Y_pred_classes
+
+        torch.cuda.empty_cache()
+
+        # Compute accuracy
+        accuracy = 100.0 * correct / total if total > 0 else 0.0
+        print(f"Validation Accuracy: {accuracy:.2f}%")
+
+        return accuracy

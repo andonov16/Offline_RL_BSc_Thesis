@@ -86,14 +86,14 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
                                   batch_size=bc_experiments_config['experiment']['batch_size_phase_1'],
                                   shuffle=True,
                                   pin_memory=True,
-                                  num_workers=os.cpu_count(),
+                                  num_workers=max(os.cpu_count()-2, 2),
                                   persistent_workers = True,
                                   drop_last=True)
     valid_dataloader = DataLoader(dataset=valid_dataset,
                                   batch_size=bc_experiments_config['experiment']['batch_size_phase_1'],
                                   shuffle=False,
                                   pin_memory=True,
-                                  num_workers=os.cpu_count(),
+                                  num_workers=max(os.cpu_count()-2, 2),
                                   persistent_workers = True)
 
     pruner = optuna.pruners.MedianPruner(
@@ -152,7 +152,7 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
         batch_size=bc_experiments_config['experiment']['batch_size_phase_2'],
         shuffle=True,
         pin_memory=True,
-        num_workers=os.cpu_count(),
+        num_workers=max(os.cpu_count()-2, 2),
         persistent_workers=True,
         drop_last=True
     )
@@ -162,7 +162,7 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
                                   batch_size=bc_experiments_config['experiment']['batch_size_phase_2'],
                                   shuffle=False,
                                   pin_memory=True,
-                                  num_workers=os.cpu_count(),
+                                  num_workers=max(os.cpu_count()-2, 2),
                                   persistent_workers = True)
 
 
