@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -342,4 +344,25 @@ def plot_feature_importance_heatmaps(f_imp_stats: dict) -> plt.Figure:
     plt.subplots_adjust(left=0.15, wspace=0.3)
 
     return feature_importance_fig
+
+
+def plot_confusion_matrix_heatmap(confusion_matrix: np.array,
+                                  model_name: str = 'Replay Buffer',
+                                  action_labels: List[str] = ['do nothing', 'fire left orientation engine', 'fire main engine', 'fire right orientation engine'],
+                                  f_size: tuple = (6,6)) -> plt.Figure:
+    fig, ax = plt.subplots(figsize=f_size)
+    sns.heatmap(data=confusion_matrix,
+                ax=ax,
+                cmap='Blues',
+                annot=True,
+                fmt='g')
+
+    ax.set_title(f'Confusion Matrix of {model_name}')
+    ax.set_xticklabels(action_labels, rotation=45)
+    ax.set_yticklabels(action_labels, rotation=0)
+
+    ax.set_ylabel('Actual')
+    ax.set_xlabel('Predicted')
+
+    return fig
 

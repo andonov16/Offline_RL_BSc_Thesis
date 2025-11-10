@@ -1,7 +1,6 @@
 # run this file to see how the BC agent trained on the final policy dataset performs in the live environment
 
 import torch
-import numpy as np
 import gymnasium as gym
 from gymnasium.envs.registration import register
 
@@ -9,49 +8,46 @@ from gymnasium.envs.registration import register
 from src.utils.config_managing import *
 from src.architectures import BC
 
-env_test_params = load_env_test_config_file()
-with open(f"../logs/fp_bc/best_hyperparams.txt", "r") as file:
-    hyperparams_dict_text = file.readline().strip()
-    hyperparams_dict_text = hyperparams_dict_text[22:].replace("'", '"')
-    best_model_hyperparams = json.loads(hyperparams_dict_text)
-
-# create a BC object with the same structure as the best performing model and
-# load the best model`s weights
-BC_model = BC(input_neurons=best_model_hyperparams['input_neurons'],
-              hidden_neurons=best_model_hyperparams['hidden_neurons'],
-              num_hidden_layers=best_model_hyperparams['num_hidden_layers'],
-              out_neurons=best_model_hyperparams['out_neurons'],
-              activation_function=torch.nn.ReLU())
-BC_model.load_state_dict(torch.load(f"../models/fp_BC_best_model.pth"))
-BC_model.eval()
+BC_model = torch.jit.load('../models/final_policy/BC_standard_refined.pt')
+norm_technique = torch.jit.load('../models/final_policy/normalization/standard_normalization.pt')
 
 # create a register and an env object (as shown in the notebook provided with the task)
 register(
-    id="LunarLander-v2",
-    entry_point="gymnasium.envs.box2d:LunarLander",
+    id='LunarLander-v2',
+    entry_point='gymnasium.envs.box2d:LunarLander',
     max_episode_steps=1000,
     reward_threshold=200,
 )
 
 # Separate env for evaluation
-env = gym.make("LunarLander-v2", render_mode='human')
-env.action_space.seed(env_test_params['seed'])
+env = gym.make(id='LunarLander-v2', render_mode='human')
 
 # run the environment visually to see the agent behaviour
-for episode in range(env_test_params['num_episodes']):
+episode = 0
+while True:
     state, info = env.reset()
     done = False
     total_reward = 0
+    reward = 0
 
     while not done:
         # convert the state from np to tensor to pass it through the BC model
-        model_output = BC_model(torch.tensor(state))
-        action = np.argmax(model_output.detach().numpy())
+        features = torch.tensor(state, dtype=torch.float32)
+        reward_tensor = torch.tensor([reward], dtype=torch.float32)
+        model_input = torch.cat((features, reward_tensor), dim=0)
+
+        if model_input is not None:
+            model_input = norm_technique(model_input)
+
+        model_output = BC_model(model_input)
+        action = torch.argmax(torch.softmax(model_output, dim=-1)).item()
+
         next_state, reward, terminated, truncated, info = env.step(action)
 
         total_reward += reward
         done = terminated or truncated
         state = next_state
 
-    print(f"Episode {episode + 1}: Total Reward = {total_reward}")
+    print(f'Episode {episode + 1}: Total Reward = {total_reward}')
+    episode += 1
 env.close()
