@@ -6,7 +6,7 @@ from gymnasium.envs.registration import register
 
 
 from src.utils.config_managing import *
-from src.architectures import BC
+from src.behaviour_cloning import BC
 
 BC_model = torch.jit.load('../models/replay_buffer/BC_standard_refined.pt')
 norm_technique = torch.jit.load('../models/replay_buffer/normalization/standard_normalization.pt')

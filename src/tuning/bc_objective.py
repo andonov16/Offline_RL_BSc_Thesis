@@ -3,7 +3,7 @@ import optuna
 import numpy as np
 from tqdm import tqdm
 from src.tuning.base_objective import BaseObjectiveTorch
-from src.architectures import BC
+from src.behaviour_cloning import BC
 
 
 class BCObjectiveTorch(BaseObjectiveTorch):
