@@ -43,5 +43,5 @@ search_space:
 
 runtime:
   device: "cuda"
-  best_model_dir: "../models"
-  log_dir: "../logs"
+  best_model_dir: "../models/BC"
+  log_dir: "../logs/BC_training"
