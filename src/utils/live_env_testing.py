@@ -11,11 +11,11 @@ from tqdm import tqdm
 def BC_evaluate_model_in_live_env(env_test_params = dict,
                                model_name: str = 'Replay Buffer',
                                norm_technique: torch.nn.Module = None,
-                               model =  torch.jit.load('../models/replay_buffer/BC_standard_refined.pt')) -> np.array:
+                               model =  torch.jit.load('../models/replay_buffer/BC/BC_standard_refined.pt')) -> np.array:
     rewards = []
 
     model.eval()
-    log_subfolder = f'../logs/{model_name}/BC_live_env_performance_test/'
+    log_subfolder = f'../logs/{model_name}/BC/BC_live_env_performance_test/'
     tensorboard_log_subfolder = os.path.join(log_subfolder, 'tensorboard')
     if not os.path.exists(log_subfolder):
         os.makedirs(log_subfolder)
