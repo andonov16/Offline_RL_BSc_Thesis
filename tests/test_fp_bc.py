@@ -8,8 +8,8 @@ from gymnasium.envs.registration import register
 from src.utils.config_managing import *
 from src.behaviour_cloning import BC
 
-BC_model = torch.jit.load('../models/final_policy/BC_standard_refined.pt')
-norm_technique = torch.jit.load('../models/final_policy/normalization/standard_normalization.pt')
+BC_model = torch.jit.load('../models/final_policy/BC/BC_standard_refined.pt')
+norm_technique = torch.jit.load('../models/final_policy/BC/normalization/standard_normalization.pt')
 
 # create a register and an env object (as shown in the notebook provided with the task)
 register(
