@@ -173,12 +173,12 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
         storage=storage
     )
 
-    # --- Create a new Optuna study for Phase 2 results ---
+    # Create a new Optuna study for Phase 2 results
     refined_storage = f"sqlite:///{os.path.join(log_dir, f'BC_{norm_technique_name.lower().replace(' ', '_')}_refined.db')}"
-    refined_study_name = f"{phase1_study_name}_refined"
+    refined_study_name = f'{phase1_study_name}_refined'
     refined_study = optuna.create_study(
         study_name=refined_study_name,
-        direction="minimize",
+        direction='minimize',
         storage=refined_storage,
         load_if_exists=True,
     )
@@ -191,16 +191,16 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
     top_trials = sorted(completed_trials, key=lambda t: t.value, reverse=True)[:top_k]
     print(len(top_trials))
 
-    print(f"Refining top {top_k} configurations on full dataset...")
+    print(f'Refining top {top_k} configurations on full dataset...')
     existing_params = [t.params for t in refined_study.trials if t.state == optuna.trial.TrialState.COMPLETE]
 
     for i, trial in enumerate(top_trials):
         params = trial.params
 
-        print(f"\n> Phase 2 – Retraining trial #{trial.number} (rank {i+1}) with params: {params}")
+        print(f'\n> Phase 2 – Retraining trial #{trial.number} (rank {i+1}) with params: {params}')
 
         if any(params == p for p in existing_params):
-            print(f"Skipping retraining for trial #{trial.number} (already in refined study).")
+            print(f'Skipping retraining for trial #{trial.number} (already in refined study).')
             continue
 
         # Update config for deterministic training
@@ -230,7 +230,7 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
         print(f'Finished retraining (rank {i+1}) — Final loss: {final_score:.4f}')
 
 
-        # --- Save this retraining result in the refined Optuna DB ---
+        # Save this retraining result in the refined Optuna DB
         refined_study.add_trial(
             optuna.trial.create_trial(
                 params=params,

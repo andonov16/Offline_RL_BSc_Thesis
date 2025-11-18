@@ -119,12 +119,12 @@ class BCObjectiveTorch(BaseObjectiveTorch):
         suggestions = {}
 
         for name, cfg in ss.items():
-            # --- Case 1: Fixed parameter (for retraining phase)
+            # Case 1: Fixed parameter (for retraining phase)
             if 'value' in cfg:
                 suggestions[name] = cfg['value']
                 continue
 
-            # --- Case 2: Normal Optuna-sampled parameter
+            # Case 2: Normal Optuna-sampled parameter
             param_type = cfg.get('type', 'float')
 
             if param_type == 'float':
@@ -226,6 +226,6 @@ class BCObjectiveTorch(BaseObjectiveTorch):
 
         # Compute accuracy
         accuracy = 100.0 * correct / total if total > 0 else 0.0
-        print(f"Validation Accuracy: {accuracy:.2f}%")
+        print(f'Validation Accuracy: {accuracy:.2f}%')
 
         return accuracy
