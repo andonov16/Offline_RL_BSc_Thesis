@@ -1,13 +1,13 @@
 import torch
 
-class Q_network(torch.nn.Module):
+class QNetwork(torch.nn.Module):
     def __init__(self,
                  input_neurons: int,
                  hidden_neurons: int = 128,
                  num_hidden_layers: int = 2,
                  out_neurons: int = 4,
                  dropout: float = 0.0):
-        super(Q_network, self).__init__()
+        super(QNetwork, self).__init__()
 
         layers = [torch.nn.Linear(input_neurons, hidden_neurons),
                   # Apply LayerNorm only once after the first input layer?

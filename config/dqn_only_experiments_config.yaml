@@ -1,0 +1,47 @@
+experiment:
+  name: "DQN_only_optimization"
+  seed: 16
+  n_optuna_trials: 20
+  max_num_training_iters: 1000000
+  mini_batch_size: 128
+  early_stopping_criterion_iters: 50000
+
+search_space:
+  dropout:
+    type: "float"
+    low: 0.0
+    high: 0.3
+    step: 0.05
+
+  lr:
+    type: "float"
+    low: 1e-4
+    high: 1e-3
+    log: true
+
+  num_hidden_neurons:
+    type: "int"
+    low: 32
+    high: 128
+    step: 32
+
+  num_hidden_layers:
+    type: "int"
+    low: 1
+    high: 6
+
+  weight_decay:
+    type: "float"
+    low: 1e-5
+    high: 1e-4
+    log: true
+
+  target_update_rate:
+    type: "int"
+    low: 2
+    high: 5
+
+runtime:
+  device: "cuda"
+  best_model_dir: "../models/DQN_only"
+  log_dir: "../logs/DQN_only_training"
