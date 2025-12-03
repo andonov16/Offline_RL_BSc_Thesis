@@ -176,7 +176,7 @@ class DQNOnlyObjectiveTorch(BaseObjectiveTorch):
                                                 torch.Tensor,
                                                 torch.Tensor,
                                                 torch.Tensor],
-                                            threshold: float = 0,
+                                            threshold: float = 0, # theta = 0 -> returns Q-learning
                                             update_target_network: bool = False
                                         ) -> float:
         # Implementation of algorithm 1 from https://arxiv.org/pdf/1910.01708
