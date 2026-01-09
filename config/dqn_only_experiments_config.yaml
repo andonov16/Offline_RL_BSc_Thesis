@@ -9,33 +9,44 @@ experiment:
 search_space:
   dropout:
     type: "float"
+    is_constant: false
     low: 0.0
     high: 0.3
     step: 0.05
 
   lr:
     type: "float"
+    is_constant: false
     low: 1e-4
     high: 1e-3
     log: true
 
   num_hidden_neurons:
     type: "int"
+    is_constant: false
     low: 32
     high: 128
     step: 32
 
   num_hidden_layers:
     type: "int"
+    is_constant: false
     low: 1
     high: 6
 
   # defines how often we update the target network (in terms of iterations)
   target_update_rate:
     type: "int"
+    is_constant: false
     low: 1000
     high: 5000
     step: 1000
+
+  # the threshold to determine the DQN/BC balance
+  theta:
+    type: "int"
+    is_constant: true
+    value: 0
 
 runtime:
   device: "cuda"

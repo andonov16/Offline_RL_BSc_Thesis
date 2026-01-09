@@ -8,7 +8,7 @@ from src.tuning.base_objective import BaseObjectiveTorch
 from src.Q_network import QNetwork
 
 
-class DQNOnlyObjectiveTorch(BaseObjectiveTorch):
+class DQNBCObjectiveTorch(BaseObjectiveTorch):
     def __init__(self,
                  train_loader: torch.utils.data.DataLoader,
                  device: torch.device,
@@ -22,7 +22,7 @@ class DQNOnlyObjectiveTorch(BaseObjectiveTorch):
                  generative_model: torch.nn.Module = None,
                  num_features: int = 9,
                  config: dict = ()):
-        super(DQNOnlyObjectiveTorch, self).__init__(train_loader,
+        super(DQNBCObjectiveTorch, self).__init__(train_loader,
                                                    device,
                                                    model_dir,
                                                    logs_dir)
@@ -89,7 +89,7 @@ class DQNOnlyObjectiveTorch(BaseObjectiveTorch):
                 target_network=target_network,
                 q_optimizer=optimizer,
                 mini_batch=mini_batch,
-                threshold=0,
+                threshold=hyperparam_suggestions['theta'],
                 update_target_network=update_target_network_flag
             )
             scheduler.step(train_loss)
@@ -122,48 +122,48 @@ class DQNOnlyObjectiveTorch(BaseObjectiveTorch):
         return curr_best_loss
 
     def _get_hyperparam_suggestions(self, trial: optuna.Trial) -> dict:
-        ss = self.config['search_space']
+        search_space = self.config['search_space']
         suggestions = {}
 
-        for name, cfg in ss.items():
-            # Case 1: Fixed parameter (for retraining phase)
-            if 'value' in cfg:
+        for name, cfg in search_space.items():
+            if cfg.get('is_constant', False):
                 suggestions[name] = cfg['value']
                 continue
 
-            # Case 2: Normal Optuna-sampled parameter
-            param_type = cfg.get('type', 'float')
+            param_type = cfg['type']
 
             if param_type == 'float':
-                # Build kwargs dynamically (avoid passing missing keys)
-                kwargs = {
+                suggest_kwargs = {
                     'name': name,
                     'low': float(cfg['low']),
                     'high': float(cfg['high']),
                 }
-                if 'step' in cfg:
-                    kwargs['step'] = float(cfg['step'])
-                if 'log' in cfg:
-                    kwargs['log'] = bool(cfg['log'])
 
-                suggestions[name] = trial.suggest_float(**kwargs)
+                if 'step' in cfg:
+                    suggest_kwargs['step'] = float(cfg['step'])
+
+                if 'log' in cfg:
+                    suggest_kwargs['log'] = bool(cfg['log'])
+
+                suggestions[name] = trial.suggest_float(**suggest_kwargs)
 
             elif param_type == 'int':
-                kwargs = {
+                suggest_kwargs = {
                     'name': name,
                     'low': int(cfg['low']),
                     'high': int(cfg['high']),
                 }
+
                 if 'step' in cfg:
-                    kwargs['step'] = int(cfg['step'])
+                    suggest_kwargs['step'] = int(cfg['step'])
 
                 if 'log' in cfg:
-                    kwargs['log'] = bool(cfg['log'])
+                    suggest_kwargs['log'] = bool(cfg['log'])
 
-                suggestions[name] = trial.suggest_int(**kwargs)
+                suggestions[name] = trial.suggest_int(**suggest_kwargs)
 
             else:
-                raise ValueError(f'Unsupported parameter type {param_type} for {name}')
+                raise ValueError(f'Unsupported parameter type "{param_type}" for "{name}"')
 
         return suggestions
 
