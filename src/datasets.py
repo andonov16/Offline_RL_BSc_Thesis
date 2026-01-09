@@ -11,6 +11,7 @@ class BCDataset(Dataset):
             self.states = torch.tensor(self.states)
         if not isinstance(actions, torch.Tensor):
             self.actions = torch.tensor(self.actions)
+
         self.__size__ = len(self.actions)
 
     def __len__(self):

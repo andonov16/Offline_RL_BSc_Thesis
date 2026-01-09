@@ -44,13 +44,13 @@ class DQNOnlyObjectiveTorch(BaseObjectiveTorch):
 
         # define model and optimizer
         online_network = (QNetwork(input_neurons=self.n_features,
-                                  hidden_neurons=hyperparam_suggestions['hidden_neurons'],
+                                  hidden_neurons=hyperparam_suggestions['num_hidden_neurons'],
                                   num_hidden_layers=hyperparam_suggestions['num_hidden_layers'],
                                   out_neurons=4,
                                   dropout=hyperparam_suggestions['dropout'])
                           .to(self.device))
         target_network = (QNetwork(input_neurons=self.n_features,
-                                  hidden_neurons=hyperparam_suggestions['hidden_neurons'],
+                                  hidden_neurons=hyperparam_suggestions['num_hidden_neurons'],
                                   num_hidden_layers=hyperparam_suggestions['num_hidden_layers'],
                                   out_neurons=4,
                                   dropout=hyperparam_suggestions['dropout'])
@@ -58,15 +58,14 @@ class DQNOnlyObjectiveTorch(BaseObjectiveTorch):
 
         optimizer = torch.optim.Adam(
             online_network.parameters(),
-            lr=hyperparam_suggestions['lr'],
-            weight_decay=hyperparam_suggestions['weight_decay']
+            lr=hyperparam_suggestions['lr']
         )
 
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
             mode='min',
             factor=0.5,
-            patience=int(self.early_stopping_criterion_iters*0.25)
+            patience=int(self.early_stopping_criterion_iters*0.1)
         )
 
         # Track the best evaluation loss for early stopping
@@ -84,12 +83,14 @@ class DQNOnlyObjectiveTorch(BaseObjectiveTorch):
                 mini_batch = next(replay_buffer)
 
             # training step
+            update_target_network_flag = iteration % hyperparam_suggestions['target_update_rate'] == 0
             train_loss = self._train_network_for_single_iteration(
                 online_network=online_network,
                 target_network=target_network,
                 q_optimizer=optimizer,
                 mini_batch=mini_batch,
                 threshold=0,
+                update_target_network=update_target_network_flag
             )
             scheduler.step(train_loss)
 

@@ -19,7 +19,6 @@ class BC(torch.nn.Module):
 
         for _ in range(num_hidden_layers):
             layers.append(torch.nn.Linear(hidden_neurons, hidden_neurons))
-            layers.append(torch.nn.LayerNorm(hidden_neurons))
             layers.append(torch.nn.GELU())
             if dropout > 0:
                 layers.append(torch.nn.Dropout(dropout))
@@ -40,9 +39,6 @@ class BC(torch.nn.Module):
     def get_action_probs(self, x: torch.Tensor) -> torch.Tensor:
         return torch.softmax(self.forward(x), dim=-1)
 
-    def get_action(self, x: torch.Tensor) -> int:
-        return torch.argmax(self.get_action_probs(x), dim=-1)
-
 
 if __name__ == "__main__":
     # Dummy input (Lunar Lander has 8 state features)
@@ -55,7 +51,6 @@ if __name__ == "__main__":
         num_hidden_layers=2,
         out_neurons=4,
         dropout=0.1,
-        activation_function=torch.nn.GELU
     )
     test_agent.eval()
 

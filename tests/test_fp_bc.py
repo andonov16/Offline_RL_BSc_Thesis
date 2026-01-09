@@ -1,21 +1,16 @@
 # run this file to see how the BC agent trained on the final policy dataset performs in the live environment
-
 import torch
 import gymnasium as gym
 from gymnasium.envs.registration import register
 
-
-from src.utils.config_managing import *
-from src.behaviour_cloning import BC
-
-BC_model = torch.jit.load('../models/final_policy/BC/BC_standard_refined.pt')
-norm_technique = torch.jit.load('../models/final_policy/BC/normalization/standard_normalization.pt')
+BC_model = torch.jit.load('../models/BC/final_policy/BC_standard.pt')
+norm_technique = torch.jit.load('../models/BC/final_policy/normalization/standard_normalization.pt')
 
 # create a register and an env object (as shown in the notebook provided with the task)
 register(
     id='LunarLander-v2',
     entry_point='gymnasium.envs.box2d:LunarLander',
-    max_episode_steps=1000,
+    max_episode_steps=2000,
     reward_threshold=200,
 )
 

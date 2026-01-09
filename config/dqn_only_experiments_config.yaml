@@ -2,9 +2,9 @@ experiment:
   name: "DQN_only_optimization"
   seed: 16
   n_optuna_trials: 20
-  max_num_training_iters: 1000000
+  max_num_training_iters: 1_000_000
   mini_batch_size: 128
-  early_stopping_criterion_iters: 50000
+  early_stopping_criterion_iters: 20_000
 
 search_space:
   dropout:
@@ -30,16 +30,12 @@ search_space:
     low: 1
     high: 6
 
-  weight_decay:
-    type: "float"
-    low: 1e-5
-    high: 1e-4
-    log: true
-
+  # defines how often we update the target network (in terms of iterations)
   target_update_rate:
     type: "int"
-    low: 2
-    high: 5
+    low: 1000
+    high: 5000
+    step: 1000
 
 runtime:
   device: "cuda"

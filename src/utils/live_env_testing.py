@@ -5,17 +5,17 @@ import numpy as np
 
 from torch.utils.tensorboard import SummaryWriter
 from gymnasium import register
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 
 def BC_evaluate_model_in_live_env(env_test_params = dict,
                                model_name: str = 'Replay Buffer',
-                               norm_technique: torch.nn.Module = None,
-                               model =  torch.jit.load('../models/replay_buffer/BC/BC_standard_refined.pt')) -> np.array:
+                               norm_technique: torch.nn.Module | None = None,
+                               model =  torch.jit.load('../../models/BC/replay_buffer/BC_standard.pt')) -> np.array:
     rewards = []
 
     model.eval()
-    log_subfolder = f'../logs/{model_name}/BC/BC_live_env_performance_test/'
+    log_subfolder = f'../../logs/BC/{model_name}/BC_live_env_performance_test/'
     tensorboard_log_subfolder = os.path.join(log_subfolder, 'tensorboard')
     if not os.path.exists(log_subfolder):
         os.makedirs(log_subfolder)
@@ -26,7 +26,7 @@ def BC_evaluate_model_in_live_env(env_test_params = dict,
     register(
         id='LunarLander-v2',
         entry_point='gymnasium.envs.box2d:LunarLander',
-        max_episode_steps=1000,
+        max_episode_steps=env_test_params['max_episode_steps'],
         reward_threshold=200,
     )
 
@@ -44,7 +44,7 @@ def BC_evaluate_model_in_live_env(env_test_params = dict,
             reward_tensor = torch.tensor([reward], dtype=torch.float32)
             model_input = torch.cat((features, reward_tensor), dim=0)
 
-            if model_input is not None:
+            if norm_technique is not None:
                 model_input = norm_technique(model_input)
 
             model_output = model(model_input)
