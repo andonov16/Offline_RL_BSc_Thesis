@@ -5,6 +5,7 @@ experiment:
   max_num_training_iters: 1_000_000
   mini_batch_size: 128
   early_stopping_criterion_iters: 20_000
+  gamma: 0.99
 
 search_space:
   dropout:
