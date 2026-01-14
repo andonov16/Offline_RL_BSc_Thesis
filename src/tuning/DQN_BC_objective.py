@@ -20,7 +20,7 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
                  early_stopping_criterion_iters: int = 50000,
                  gamma: float = 0.99,
                  generative_model: torch.nn.Module = None,
-                 num_features: int = 9,
+                 num_features: int = 8,
                  config: dict = ()):
         super(DQNBCObjectiveTorch, self).__init__(train_loader,
                                                    device,
@@ -101,13 +101,16 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
 
             # early stopping based on eval loss
             if train_loss < curr_best_loss:
-                curr_best_eval_loss = train_loss
+                curr_best_loss = train_loss
                 iterations_without_improvement = 0
                 # save best model during trial
-                if self.overall_best_loss > curr_best_eval_loss:
+                if self.overall_best_loss > curr_best_loss:
                     self.best_model = online_network
-                    self.__save_best_model__(model=online_network, model_name=self.model_name)
-                    self.overall_best_loss = curr_best_eval_loss
+                    self._save_best_model(
+                        model=online_network,
+                        model_name=self.model_name
+                    )
+                    self.overall_best_loss = curr_best_loss
             else:
                 iterations_without_improvement += 1
 
@@ -185,15 +188,17 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
         target_network.eval()
         self.generative_model.eval()
 
-        states, actions, rewards, next_states, dones = mini_batch
+        states, actions, rewards, next_states, dones = [x.to(self.device, non_blocking=True) for x in mini_batch]
 
         # Line 5: action selection with threshold (in this case threshold = 0 -> only BC values will be totally ignored
         with torch.no_grad():
-            gen_probs = self.generative_model(next_states)  # [batch, num_actions]
+            gen_probs = self.generative_model(
+                torch.cat([next_states, rewards.unsqueeze(1)], dim=-1)
+            ) # [batch, num_actions]
             q_values_next = online_network(next_states)  # [batch, num_actions]
 
             max_gen_probs, _ = gen_probs.max(dim=1, keepdim=True)
-            mask = (gen_probs / max_gen_probs) > threshold
+            mask = (gen_probs / max_gen_probs.clamp(min=1e-8)) > threshold
 
             # Masked Q-values: set invalid actions to -inf
             masked_q_values = q_values_next.masked_fill(~mask, float('-inf'))

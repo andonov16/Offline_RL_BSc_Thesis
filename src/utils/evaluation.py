@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from typing import Tuple, List
 
-from src.experiments.bc_experiments import prepare_data
+from src.experiments.BC_experiments import prepare_data
 from src.normalization import NormalizationModule
 from src.datasets import BCDataset
 

@@ -32,7 +32,7 @@ class DQNReplayMemoryDataset(Dataset):
         self.rewards = states_rewards_next_states_tensor[:, 8]
         self.next_states = states_rewards_next_states_tensor[:, 9:17]
 
-        self.dones = dones_tensor.bool()
+        self.dones = dones_tensor.float()
         self.actions = actions_tensor.long()
 
     def __len__(self):

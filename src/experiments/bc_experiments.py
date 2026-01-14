@@ -1,6 +1,5 @@
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
-from copy import deepcopy
 import torch
 from typing import List, Tuple
 import os
@@ -10,7 +9,7 @@ import numpy as np
 
 from src.datasets import BCDataset
 from src.normalization import NormalizationModule
-from src.tuning.bc_objective import BCObjectiveTorch
+from src.tuning.BC_objective import BCObjectiveTorch
 
 
 def prepare_data(df: pd.DataFrame,
@@ -79,23 +78,20 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
 
     storage = f'sqlite:///{os.path.join(log_dir, f'BC_{norm_technique_name.lower().replace(' ', '_')}.db')}'
 
-    num_workers = max(os.cpu_count()-2, 2)
-    pref_factor = 2
+    num_workers = 0
 
     train_dataloader = DataLoader(dataset=train_dataset,
                                   batch_size=experiments_config['experiment']['batch_size'],
                                   shuffle=True,
                                   pin_memory=True,
                                   num_workers=num_workers,
-                                  persistent_workers = True,
-                                  prefetch_factor=pref_factor)
+                                  persistent_workers = False,)
     valid_dataloader = DataLoader(dataset=valid_dataset,
                                   batch_size=experiments_config['experiment']['batch_size'],
                                   shuffle=False,
                                   pin_memory=True,
                                   num_workers=num_workers,
-                                  persistent_workers = True,
-                                  prefetch_factor=pref_factor)
+                                  persistent_workers = False,)
 
     pruner = optuna.pruners.MedianPruner(
         n_startup_trials=5,
@@ -107,9 +103,11 @@ def conduct_bc_experiment(dataset_name: str = 'final_policy',
         train_loader=train_dataloader,
         eval_loader=valid_dataloader,
         model_dir=os.path.join(experiments_config['runtime']['best_model_dir'], f'{dataset_name}/'),
+        logs_dir=os.path.join(experiments_config['runtime']['log_dir'], f'{dataset_name}/'),
+        dataset_name=dataset_name,
         model_name=output_model_name,
         device=device,
-        num_features=X_train.shape[1],
+        num_features=len(selected_features),
         config=experiments_config,
         max_epochs=experiments_config['experiment']['max_epochs']
     )

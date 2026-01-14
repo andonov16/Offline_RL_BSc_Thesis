@@ -33,13 +33,11 @@ while True:
     while not done:
         # convert the state from np to tensor to pass it through the BC model
         features = torch.tensor(state, dtype=torch.float32)
-        reward_tensor = torch.tensor([reward], dtype=torch.float32)
-        model_input = torch.cat((features, reward_tensor), dim=0)
 
-        if model_input is not None:
-            model_input = norm_technique(model_input)
+        if norm_technique is not None:
+            model_input = norm_technique(features)
 
-        model_output = BC_model(model_input)
+        model_output = BC_model(features)
         action = torch.argmax(torch.softmax(model_output, dim=-1)).item()
 
         next_state, reward, terminated, truncated, info = env.step(action)

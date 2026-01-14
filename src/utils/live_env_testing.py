@@ -41,13 +41,11 @@ def BC_evaluate_model_in_live_env(env_test_params = dict,
 
         while not done:
             features = torch.tensor(state, dtype=torch.float32)
-            reward_tensor = torch.tensor([reward], dtype=torch.float32)
-            model_input = torch.cat((features, reward_tensor), dim=0)
 
             if norm_technique is not None:
-                model_input = norm_technique(model_input)
+                model_input = norm_technique(features)
 
-            model_output = model(model_input)
+            model_output = model(features)
             action = torch.argmax(torch.softmax(model_output, dim=-1)).item()
             next_state, reward, terminated, truncated, info = env.step(action)
 

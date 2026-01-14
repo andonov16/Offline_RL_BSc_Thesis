@@ -1,10 +1,11 @@
 experiment:
-  name: "DQN_only_optimization"
+  name: "DQN_BC_optimization"
   seed: 16
   n_optuna_trials: 20
-  max_num_training_iters: 1_000_000
-  mini_batch_size: 128
-  early_stopping_criterion_iters: 20_000
+  max_num_training_iters: 10_000
+  mini_batch_size: 512
+  early_stopping_criterion_iters: 2_00
+  gamma: 0.99
 
 search_space:
   dropout:
@@ -38,17 +39,17 @@ search_space:
   target_update_rate:
     type: "int"
     is_constant: false
-    low: 1000
-    high: 5000
-    step: 1000
+    low: 100
+    high: 500
+    step: 100
 
   # the threshold to determine the DQN/BC balance
   theta:
-    type: "int"
+    type: "float"
     is_constant: true
-    value: 0
+    value: 1.0
 
 runtime:
   device: "cuda"
-  best_model_dir: "../models/DQN_only"
-  log_dir: "../logs/DQN_only_training"
+  best_model_dir: "../../../models/DQN"
+  log_dir: "../../../logs/DQN_BC"

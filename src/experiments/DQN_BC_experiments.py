@@ -51,7 +51,7 @@ def conduct_dqn_bc_experiment(dataset_name: str = 'final_policy',
         torch.cuda.manual_seed_all(seed)
 
     print('='*100)
-    X_train, y_train = prepare_data(df=train_df.drop(['done']),
+    X_train, y_train = prepare_data(df=train_df,
                                     selected_features=selected_features,
                                     norm_script=norm_technique_script)
 
@@ -71,7 +71,7 @@ def conduct_dqn_bc_experiment(dataset_name: str = 'final_policy',
     pref_factor = 2
 
     train_dataloader = DataLoader(dataset=train_dataset,
-                                  batch_size=experiments_config['experiment']['batch_size'],
+                                  batch_size=experiments_config['experiment']['mini_batch_size'],
                                   shuffle=True,
                                   pin_memory=True,
                                   num_workers=num_workers,
@@ -95,7 +95,7 @@ def conduct_dqn_bc_experiment(dataset_name: str = 'final_policy',
         early_stopping_criterion_iters=experiments_config['experiment']['early_stopping_criterion_iters'],
         gamma=float(experiments_config['experiment']['gamma']),
         generative_model=generative_model_script,
-        num_features=X_train.shape[1],
+        num_features=8, # the dimentionality of a single state
         config=experiments_config,
     )
 

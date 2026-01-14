@@ -1,12 +1,16 @@
+import os.path
+
 import torch
 import optuna
-import numpy as np
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 from sklearn.utils.class_weight import compute_class_weight
 
 from src.tuning.base_objective import BaseObjectiveTorch
 from src.behaviour_cloning import BC
 
+
+torch.backends.cudnn.benchmark = True
 
 class BCObjectiveTorch(BaseObjectiveTorch):
     def __init__(self,
@@ -19,7 +23,7 @@ class BCObjectiveTorch(BaseObjectiveTorch):
                  logs_dir: str = '../logs',
                  max_epochs: int = 100,
                  max_epochs_without_improvement: int = 7,
-                 num_features: int = 9,
+                 num_features: int = 8,
                  config: dict = ()):
         super(BCObjectiveTorch, self).__init__(train_loader=train_loader,
                                                device=device,
@@ -77,15 +81,23 @@ class BCObjectiveTorch(BaseObjectiveTorch):
         train_losses = []
         eval_losses = []
 
+        scaler = torch.amp.GradScaler(device=self.device.type, enabled=self.device.type == 'cuda')
+
+        trial_log_dir = os.path.join(self.log_dir, f"{self.model_name}/trial_{trial.number}")
+        writer = SummaryWriter(log_dir=trial_log_dir)
+
         for epoch in tqdm(range(self.max_epochs), desc=f'Trial {trial.number} Epochs'):
             # training step
-            train_loss = self._train_model_single_epoch(model, optimizer)
+            train_loss = self._train_model_single_epoch(model, optimizer, scaler)
             train_losses.append(train_loss)
 
             # evaluation step (compute eval loss)
             # returns eval loss
             eval_loss = self._evaluate_model_single_epoch(model)
             eval_losses.append(eval_loss)
+
+            # TensorBoard logging
+            writer.add_scalars('Loss', {'Train': train_loss, 'Eval': eval_loss}, epoch)
 
             # scheduler step
             scheduler.step(eval_loss)
@@ -111,8 +123,8 @@ class BCObjectiveTorch(BaseObjectiveTorch):
                 break
 
         # Save train and eval losses in trial user attributes
-        trial.set_user_attr('train_losses', train_losses)
-        trial.set_user_attr('eval_losses', eval_losses)
+        # trial.set_user_attr('train_losses', train_losses)
+        # trial.set_user_attr('eval_losses', eval_losses)
 
         # Clean up
         del model, optimizer
@@ -121,10 +133,10 @@ class BCObjectiveTorch(BaseObjectiveTorch):
         # Return the evaluation loss as the trial score
         return curr_best_eval_loss
 
-    def _train_model_single_epoch(self, model: torch.nn.Module, optimizer: torch.optim.Optimizer) -> float:
+    def _train_model_single_epoch(self, model: torch.nn.Module,
+                                  optimizer: torch.optim.Optimizer,
+                                  scaler) -> float:
         model.train()
-
-        scaler = torch.amp.GradScaler(device=self.device.type, enabled=self.device.type == 'cuda')
 
         total_loss = 0.0
         for X, Y_true in self.train_loader:
@@ -141,19 +153,22 @@ class BCObjectiveTorch(BaseObjectiveTorch):
             scaler.update()
 
             total_loss += curr_loss.item()
-            del preds
         return total_loss / len(self.train_loader)
-        
+
     def _evaluate_model_single_epoch(self, model: torch.nn.Module) -> float:
         model.eval()
         total_loss = 0.0
 
-        with torch.no_grad():
+        with torch.no_grad(), torch.amp.autocast(
+                device_type=self.device.type,
+                enabled=self.device.type == 'cuda'
+        ):
             for X, Y_true in self.eval_loader:
-                X=X.to(self.device)
-                Y_true=Y_true.to(self.device)
+                X = X.to(self.device, non_blocking=True)
+                Y_true = Y_true.to(self.device, non_blocking=True)
 
                 Y_pred = model(X)
-                # Compute loss
-                total_loss += self.loss_func(Y_pred, Y_true).item()
-        return total_loss / len(self.eval_loader)
+                loss = self.loss_func(Y_pred, Y_true)
+                total_loss += loss.detach()
+
+        return (total_loss / len(self.eval_loader)).item()
