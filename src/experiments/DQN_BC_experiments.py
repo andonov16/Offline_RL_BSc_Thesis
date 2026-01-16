@@ -59,6 +59,7 @@ def conduct_dqn_bc_experiment(dataset_name: str = 'final_policy',
             states_rewards_next_states_tensor=X_train,
             actions_tensor=y_train,
             dones_tensor=dones,
+            device=device,
     )
 
     base_log_dir = os.path.abspath(experiments_config['runtime']['log_dir'])
@@ -67,21 +68,13 @@ def conduct_dqn_bc_experiment(dataset_name: str = 'final_policy',
 
     storage = f'sqlite:///{os.path.join(log_dir, f'DQN_BC_{norm_technique_name.lower().replace(' ', '_')}.db')}'
 
-    num_workers = max(os.cpu_count()-2, 2)
-    pref_factor = 2
 
     train_dataloader = DataLoader(dataset=train_dataset,
                                   batch_size=experiments_config['experiment']['mini_batch_size'],
-                                  shuffle=True,
-                                  pin_memory=True,
-                                  num_workers=num_workers,
-                                  persistent_workers = True,
-                                  prefetch_factor=pref_factor)
+                                  shuffle=True,)
 
-    pruner = optuna.pruners.MedianPruner(
-        n_startup_trials=5,
-        n_warmup_steps=20,
-        interval_steps=1
+    pruner = optuna.pruners.PercentilePruner(
+        percentile=25, n_startup_trials=5, n_warmup_steps=experiments_config['experiment']['report_every_n_steps']*5
     )
 
     objective = DQNBCObjectiveTorch(
@@ -96,6 +89,7 @@ def conduct_dqn_bc_experiment(dataset_name: str = 'final_policy',
         gamma=float(experiments_config['experiment']['gamma']),
         generative_model=generative_model_script,
         num_features=8, # the dimentionality of a single state
+        report_every_n_steps=experiments_config['experiment']['report_every_n_steps'],
         config=experiments_config,
     )
 

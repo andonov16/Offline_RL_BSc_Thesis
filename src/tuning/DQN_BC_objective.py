@@ -21,6 +21,7 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
                  gamma: float = 0.99,
                  generative_model: torch.nn.Module = None,
                  num_features: int = 8,
+                 report_every_n_steps: int = 1000,
                  config: dict = ()):
         super(DQNBCObjectiveTorch, self).__init__(train_loader,
                                                    device,
@@ -34,6 +35,7 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
         self.max_num_training_iters = max_num_training_iters
         self.early_stopping_criterion_iters = early_stopping_criterion_iters
         self.generative_model = generative_model
+        self.report_every_n_steps = report_every_n_steps
 
         self.overall_best_loss = float('inf')
         self.config = config
@@ -56,6 +58,9 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
                                   dropout=hyperparam_suggestions['dropout'])
                           .to(self.device))
 
+        with torch.no_grad():
+            target_network.load_state_dict(online_network.state_dict())
+
         optimizer = torch.optim.Adam(
             online_network.parameters(),
             lr=hyperparam_suggestions['lr']
@@ -65,7 +70,7 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
             optimizer,
             mode='min',
             factor=0.5,
-            patience=int(self.early_stopping_criterion_iters*0.1)
+            patience=10
         )
 
         # Track the best evaluation loss for early stopping
@@ -74,7 +79,14 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
 
         replay_buffer = iter(self.train_loader)
 
-        for iteration in tqdm(range(self.max_num_training_iters), desc=f'Trial {trial.number} Iterations'):
+        UPDATE_EVERY = 1000
+        PBAR_EVERY = 1000
+        pbar = tqdm(total=self.max_num_training_iters,
+                    desc=f'Trial {trial.number}',
+                    miniters=UPDATE_EVERY,
+                    mininterval=1.0)
+
+        for iteration in range(self.max_num_training_iters):
             # get a random mini-batch
             try:
                 mini_batch = next(replay_buffer)
@@ -92,12 +104,19 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
                 threshold=hyperparam_suggestions['theta'],
                 update_target_network=update_target_network_flag
             )
-            scheduler.step(train_loss)
+
+            if iteration % PBAR_EVERY == 0:
+                pbar.update(PBAR_EVERY)
+                pbar.set_postfix(loss=float(train_loss))
+
+            if iteration % 1000 == 0:
+                scheduler.step(train_loss)
 
             # report to Optuna (for pruning)
-            trial.report(train_loss, iteration)
-            if trial.should_prune():
-                raise optuna.TrialPruned()
+            if iteration % self.report_every_n_steps == 0:
+                trial.report(train_loss, iteration)
+                if trial.should_prune():
+                    raise optuna.TrialPruned()
 
             # early stopping based on eval loss
             if train_loss < curr_best_loss:
@@ -120,6 +139,7 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
         # Clean up
         del online_network, target_network, optimizer
         torch.cuda.empty_cache()
+        pbar.close()
 
         # Return the evaluation loss as the trial score
         return curr_best_loss
@@ -170,6 +190,7 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
 
         return suggestions
 
+
     def _train_network_for_single_iteration(self,
                                             online_network: torch.nn.Module,
                                             target_network: torch.nn.Module,
@@ -184,41 +205,43 @@ class DQNBCObjectiveTorch(BaseObjectiveTorch):
                                             update_target_network: bool = False
                                         ) -> float:
         # Implementation of algorithm 1 from https://arxiv.org/pdf/1910.01708
+
         online_network.train()
         target_network.eval()
-        self.generative_model.eval()
+        self.generative_model.eval()  # frozen BC model
 
-        states, actions, rewards, next_states, dones = [x.to(self.device, non_blocking=True) for x in mini_batch]
+        states, actions, rewards, next_states, dones = mini_batch
 
-        # Line 5: action selection with threshold (in this case threshold = 0 -> only BC values will be totally ignored
+        # compute next actions with BC filtering
         with torch.no_grad():
-            gen_probs = self.generative_model(
-                torch.cat([next_states, rewards.unsqueeze(1)], dim=-1)
-            ) # [batch, num_actions]
-            q_values_next = online_network(next_states)  # [batch, num_actions]
-
+            # behavior model probabilities
+            gen_probs = self.generative_model(next_states)  # [batch, num_actions]
             max_gen_probs, _ = gen_probs.max(dim=1, keepdim=True)
-            mask = (gen_probs / max_gen_probs.clamp(min=1e-8)) > threshold
+            mask = (gen_probs / max_gen_probs.clamp(min=1e-8)) >=  threshold
 
-            # Masked Q-values: set invalid actions to -inf
-            masked_q_values = q_values_next.masked_fill(~mask, float('-inf'))
+            # online Q-values for action selection (Double DQN style)
+            q_next_online = online_network(next_states)  # [batch, num_actions]
+            masked_q_next = q_next_online.masked_fill(~mask, float('-inf'))
+            next_actions = masked_q_next.argmax(dim=1)  # [batch]
 
-            # Select best action under threshold condition
-            next_actions = masked_q_values.argmax(dim=1)
+            # target Q-values from target network
+            q_next_target = target_network(next_states)
+            target_q_values = q_next_target.gather(1, next_actions.unsqueeze(1)).squeeze(1)
 
-        # Line 6: online Q-network update
-        online_q_values = online_network(states).gather(1, actions.unsqueeze(1)).squeeze(1)
-        target_q_values = target_network(next_states).gather(1, next_actions.unsqueeze(1)).squeeze(1)
+        current_q_values = online_network(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+
+        # compute targets
         targets = rewards + self.gamma * target_q_values * (1 - dones)
-        # using the Hubert loss instead of plain MSE as suggested in the paper
-        q_loss = torch.nn.functional.smooth_l1_loss(online_q_values, targets.detach())
+        q_loss = torch.nn.functional.smooth_l1_loss(current_q_values, targets.detach())
 
+        # backpropagate
         q_optimizer.zero_grad()
         q_loss.backward()
         q_optimizer.step()
 
-        # Line 8: target Q-network update (if necessary)
+        # update target network if needed
         if update_target_network:
-            target_network.load_state_dict(online_network.state_dict())
+            with torch.no_grad():
+                target_network.load_state_dict(online_network.state_dict())
 
-        return q_loss.item()
+        return q_loss.detach()

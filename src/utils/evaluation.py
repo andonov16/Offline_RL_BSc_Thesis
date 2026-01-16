@@ -37,7 +37,8 @@ def evaluate_model_test_dataset(model: torch.nn.Module,
                                 device: torch.device,
                                 test_df: pd.DataFrame,
                                 norm_technique_script: NormalizationModule,
-                                selected_features: List[str]) -> Tuple[dict, np.array]:
+                                selected_features: List[str],
+                                apply_softmax: bool = True) -> Tuple[dict, np.array]:
     model.eval()
     model.to(device)
 
@@ -55,7 +56,10 @@ def evaluate_model_test_dataset(model: torch.nn.Module,
         for states, labels in test_loader:
             states, labels = states.to(device), labels.to(device)
             logits = model(states)
-            preds = torch.argmax(torch.softmax(logits, dim=1), dim=1)
+            if apply_softmax:
+                preds = torch.argmax(torch.softmax(logits, dim=1), dim=1)
+            else:
+                preds = torch.argmax(logits, dim=1)
             all_preds.append(preds.cpu())
             all_labels.append(labels.cpu())
 
