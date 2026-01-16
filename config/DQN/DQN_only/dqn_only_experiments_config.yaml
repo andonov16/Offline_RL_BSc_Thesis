@@ -1,19 +1,18 @@
 experiment:
-  name: "DQN_BC_optimization"
+  name: "DQN_only_optimization"
   seed: 16
-  n_optuna_trials: 20
-  max_num_training_iters: 10_000
-  mini_batch_size: 512
-  early_stopping_criterion_iters: 2_00
+  n_optuna_trials: 15
+  max_num_training_iters: 150_000
+  mini_batch_size: 64 # more noisy gradients
+  early_stopping_criterion_iters: 20_000
   gamma: 0.99
+  report_every_n_steps: 1_000
 
 search_space:
   dropout:
     type: "float"
-    is_constant: false
-    low: 0.0
-    high: 0.3
-    step: 0.05
+    is_constant: true
+    value: 0
 
   lr:
     type: "float"
@@ -38,15 +37,13 @@ search_space:
   # defines how often we update the target network (in terms of iterations)
   target_update_rate:
     type: "int"
-    is_constant: false
-    low: 100
-    high: 500
-    step: 100
+    is_constant: true
+    value: 1_000
 
   # the threshold to determine the DQN/BC balance
   theta:
     type: "float"
-    is_constant: true
+    is_constant: True
     value: 0.0
 
 runtime:

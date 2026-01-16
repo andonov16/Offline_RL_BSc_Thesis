@@ -33,9 +33,11 @@ def BC_evaluate_model_in_live_env(env_test_params = dict,
 
     env = gym.make('LunarLander-v2')
     env.action_space.seed(env_test_params['seed'])
+    base_seed = env_test_params['seed']
 
     for episode in tqdm(range(env_test_params['num_episodes'])):
-        state, info = env.reset()
+        episode_seed = base_seed + episode
+        state, info = env.reset(seed=episode_seed)
         done = False
         total_reward = 0
         reward = 0
@@ -69,13 +71,14 @@ def BC_evaluate_model_in_live_env(env_test_params = dict,
 
 def DQN_BC_evaluate_model_in_live_env(env_test_params = dict,
                                model_name: str = 'Replay Buffer',
+                               model_variant_name: str = 'raw',
                                norm_technique: torch.nn.Module | None = None,
                                model =  torch.jit.load('../../../models/DQN/replay_buffer/DQN_BC_standard.pt'),
                             ) -> np.array:
     rewards = []
 
     model.eval()
-    log_subfolder = f'../../../logs/DQN_BC/{model_name}/DQN_BC_live_env_performance_test/'
+    log_subfolder = f'../../../logs/DQN_BC/{model_name}/DQN_BC_live_env_performance_test/{model_variant_name}'
     tensorboard_log_subfolder = os.path.join(log_subfolder, 'tensorboard')
     if not os.path.exists(log_subfolder):
         os.makedirs(log_subfolder)
@@ -91,10 +94,11 @@ def DQN_BC_evaluate_model_in_live_env(env_test_params = dict,
     )
 
     env = gym.make('LunarLander-v2')
-    env.action_space.seed(env_test_params['seed'])
+    base_seed = env_test_params['seed']
 
     for episode in tqdm(range(env_test_params['num_episodes'])):
-        state, info = env.reset()
+        episode_seed = base_seed + episode
+        state, info = env.reset(seed=episode_seed)
         done = False
         total_reward = 0
         reward = 0

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -213,12 +213,20 @@ def plot_univariate_analysis(
         f_size: tuple = (18, 21),
         kde_kwargs: dict = dict(),
         hist_kwargs: dict = dict(),
+        sharex: bool = False,
+        sharey: bool = False,
+        xlim: Tuple[float, float] = None,
+        ylim: Tuple[float, float] = None,
 ) -> plt.Figure:
     def is_continuous(series):
         return series.nunique() > 10 and np.issubdtype(series.dtype, np.number)
 
     num_rows = int(np.ceil(len(df1.columns) * 3 / num_columns))
-    fig, axes = plt.subplots(ncols=num_columns, nrows=num_rows, figsize=f_size)
+    fig, axes = plt.subplots(ncols=num_columns,
+                             nrows=num_rows,
+                             figsize=f_size,
+                             sharex=sharex,
+                             sharey=sharey)
     axes = axes.flatten()
 
     if custom_title:
@@ -232,6 +240,13 @@ def plot_univariate_analysis(
 
         # dataset 1
         ax = axes[i]
+
+        if xlim is not None:
+            ax.set_xlim(xlim)
+
+        if ylim is not None:
+            ax.set_ylim(ylim)
+
         i += 1
         if continuous:
             sns.kdeplot(s1, ax=ax, label=df1_name, **kde_kwargs)
@@ -242,6 +257,13 @@ def plot_univariate_analysis(
 
         # dataset 2
         ax = axes[i]
+
+        if xlim is not None:
+            ax.set_xlim(xlim)
+
+        if ylim is not None:
+            ax.set_ylim(ylim)
+
         i += 1
         if continuous:
             sns.kdeplot(s2, ax=ax, label=df2_name, color='orange', **kde_kwargs)
