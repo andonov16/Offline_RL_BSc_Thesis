@@ -71,6 +71,7 @@ def BC_evaluate_model_in_live_env(env_test_params = dict,
 
 def DQN_BC_evaluate_model_in_live_env(env_test_params = dict,
                                model_name: str = 'Replay Buffer',
+                               model_theta_variant: str = 'DQN+BC',
                                model_variant_name: str = 'raw',
                                norm_technique: torch.nn.Module | None = None,
                                model =  torch.jit.load('../../../models/DQN/replay_buffer/DQN_BC_standard.pt'),
@@ -78,7 +79,7 @@ def DQN_BC_evaluate_model_in_live_env(env_test_params = dict,
     rewards = []
 
     model.eval()
-    log_subfolder = f'../../../logs/DQN_BC/{model_name}/DQN_BC_live_env_performance_test/{model_variant_name}'
+    log_subfolder = f'../../../logs/{model_theta_variant}/{model_name}/{model_theta_variant}_live_env_performance_test/{model_variant_name}'
     tensorboard_log_subfolder = os.path.join(log_subfolder, 'tensorboard')
     if not os.path.exists(log_subfolder):
         os.makedirs(log_subfolder)
