@@ -69,12 +69,13 @@ def BC_evaluate_model_in_live_env(env_test_params = dict,
     return np.array(rewards)
 
 
-def DQN_BC_evaluate_model_in_live_env(env_test_params = dict,
+def DQN_BC_evaluate_model_in_live_env(
+                               model : torch.nn.Module,
+                               env_test_params = dict,
                                model_name: str = 'Replay Buffer',
                                model_theta_variant: str = 'DQN_BC',
                                model_variant_name: str = 'raw',
                                norm_technique: torch.nn.Module | None = None,
-                               model =  torch.jit.load('../../../models/DQN/replay_buffer/DQN_BC_standard.pt'),
                             ) -> np.array:
     rewards = []
 
@@ -129,3 +130,48 @@ def DQN_BC_evaluate_model_in_live_env(env_test_params = dict,
     env.close()
 
     return np.array(rewards)
+
+
+def evaluate_model_in_live_env_UI_available(
+        model_to_evaluate: torch.nn.Module,
+        norm_technique: torch.nn.Module | None = None
+) -> None:
+    # create a register and an env object (as shown in the notebook provided with the task)
+    register(
+        id='LunarLander-v2',
+        entry_point='gymnasium.envs.box2d:LunarLander',
+        max_episode_steps=2000,
+        reward_threshold=200,
+    )
+
+    # Separate env for evaluation
+    env = gym.make(id='LunarLander-v2', render_mode='human')
+
+    # run the environment visually to see the agent behaviour
+    episode = 0
+    while True:
+        state, info = env.reset()
+        done = False
+        total_reward = 0
+        reward = 0
+
+        while not done:
+            # convert the state from np to tensor to pass it through the BC model
+            features = torch.tensor(state, dtype=torch.float32)
+
+            if norm_technique is not None:
+                features = norm_technique(features)
+
+            model_output = model_to_evaluate(features)
+            action = torch.argmax(torch.softmax(model_output, dim=-1)).item()
+
+            next_state, reward, terminated, truncated, info = env.step(action)
+
+            total_reward += reward
+            done = terminated or truncated
+            state = next_state
+
+        print(f'Episode {episode + 1}: Total Reward = {total_reward}')
+        episode += 1
+    env.close()
+
