@@ -1,7 +1,9 @@
+import os
 import numpy as np
 import pandas as pd
-from typing import Tuple
+from typing import Tuple, Dict
 
+from tensorboard.backend.event_processing import event_accumulator
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from src.datasets import BCDataset
@@ -143,3 +145,36 @@ def get_legs_df(df: pd.DataFrame) -> pd.DataFrame:
     result_df = pd.concat([leg_1, leg_2, both_legs], axis=1)
     result_df.columns = ['leg_1', 'leg_2', 'both_legs']
     return result_df
+
+
+def load_rewards_from_tensorboard(log_dir: str, tag: str = 'Episode Reward') -> np.ndarray:
+    event_files = [os.path.join(log_dir, f) for f in os.listdir(log_dir) if f.startswith('events.out.tfevents')]
+    if not event_files:
+        raise FileNotFoundError(f'No event files found in {log_dir}')
+
+    ea = event_accumulator.EventAccumulator(event_files[0])
+    ea.Reload()
+
+    scalar_events = ea.Scalars(tag)
+    rewards = np.array([e.value for e in scalar_events])
+
+    return rewards
+
+
+def _load_rewards_for_single_experiment(experiment_name: str = 'DQN_BC', dataset_name: str = 'replay_buffer') -> Dict[str, np.array]:
+    norm_names = ['max_abs', 'min_max', 'raw', 'robust', 'standard']
+    rewards_dict: Dict[str, np.array] = {}
+
+    for norm_name in norm_names:
+        log_path = f'../../logs/{experiment_name}/{dataset_name}/{experiment_name}_live_env_performance_test/{norm_name}/tensorboard'
+        rewards_dict[norm_name] = load_rewards_from_tensorboard(log_path)
+    return rewards_dict
+
+
+def load_rewards_for_all_experiments(dataset_name: str = 'replay_buffer') -> Dict[str, Dict[str,np.ndarray]]:
+    experiment_names = ['DQN_only', 'DQN_BC', 'BC_only']
+
+    rewards_dict: Dict[str, Dict[str,np.ndarray]] = {}
+    for experiment_name in experiment_names:
+        rewards_dict[experiment_name] = _load_rewards_for_single_experiment(experiment_name=experiment_name, dataset_name=dataset_name)
+    return rewards_dict

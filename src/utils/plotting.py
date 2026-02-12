@@ -1,9 +1,11 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+
+plt.style.use('default')
 
 
 def plot_hist(data_dict: dict, num_columns: int = 2, f_size: tuple = (16, 9), 
@@ -385,6 +387,48 @@ def plot_confusion_matrix_heatmap(confusion_matrix: np.array,
 
     ax.set_ylabel('Actual')
     ax.set_xlabel('Predicted')
+
+    return fig
+
+
+def plot_DQN_experiments_live_env_eval_KDE_summary(rb_rewards: Dict[str, Dict[str, np.ndarray]],
+                                                   fp_rewards: Dict[str, Dict[str, np.ndarray]],
+                                                   fig_title: str = 'Accumulated Rewards Distribution after 1000 Episodes (Live)',
+                                                   f_size: Tuple[int, int] = (16,16),
+                                                   kde_kwargs: dict = {'linewidth': 2, 'alpha': 0.5},
+                                                   sharex: bool =True,
+                                                   sharey: bool = True,
+                                                   xlim: Tuple[float, float] = (-400, 400),
+                                                   ylim: Tuple[float, float] = (0, 0.015)
+                                                   ) -> plt.Figure:
+    fig, axes = plt.subplots(nrows=5,
+                             ncols=3,
+                             figsize=f_size,
+                             sharex=sharex,
+                             sharey=sharey)
+    if fig_title:
+        fig.suptitle(fig_title, fontsize=16)
+
+    experiment_names = ['DQN_only', 'DQN_BC', 'BC_only']
+    norm_names = [ 'raw', 'max_abs', 'min_max', 'robust', 'standard']
+
+    for i, experiment_name in enumerate(experiment_names):
+        for j, norm_name in enumerate(norm_names):
+            ax = axes[j, i]
+
+            if xlim is not None:
+                ax.set_xlim(xlim)
+
+            if ylim is not None:
+                ax.set_ylim(ylim)
+
+            ax.set_title(f'{experiment_name}: {norm_name} Rewards')
+
+            sns.kdeplot(rb_rewards[experiment_name][norm_name], ax=ax, label='RB agent', color='blue', **kde_kwargs)
+            sns.kdeplot(fp_rewards[experiment_name][norm_name], ax=ax, label='FP agent', color='orange', **kde_kwargs)
+
+            ax.legend()
+            ax.grid(True)
 
     return fig
 
