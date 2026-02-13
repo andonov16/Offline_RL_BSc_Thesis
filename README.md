@@ -84,6 +84,7 @@ $$ x\prime= \frac{x - x_{mean}}{\sigma + \epsilon} $$
 > To avoid division by 0 a small positive constant $\epsilon=10^{-6}$ was added to the denominator.
 
 - Robust - Scales features using median and interquartile range (IQR). Makes the models less sensitive to outliers:
+
 $$ x\prime = \frac{x-x_{median}}{x_{Q3} - x_{Q1}} $$
 
 
