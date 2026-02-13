@@ -8,7 +8,7 @@ However, removing exploration introduces major challenges, such as extrapolation
 
 Modern approaches such as DQN+BC and TD3+BC address these issues by combining RL with Behavior Cloning (BC) regularization, merging RL and supervised learning in a deep learning setting.
 
-This project investigates DQN+BC in the [Lunar Lander](https://gymnasium.farama.org/environments/box2d/lunar_lander/) environment environment and:
+This project investigates DQN+BC in the [Lunar Lander](https://gymnasium.farama.org/environments/box2d/lunar_lander/) environment and:
 - Separates BC pretraining from DQN+BC training;
 - Studies the impact of state normalization;
 - Confirms that replay buffer (RB) datasets collected during online training outperform final policy (FP) datasets collected from near-optimal policies, due to higher diversity, exploration, and the presence of sub-optimal transitions.
