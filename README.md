@@ -4,7 +4,7 @@
 
 Offline Reinforcement Learning (Offline RL) learns policies from a fixed dataset, without interacting with the environment during training. This is useful when online interaction is costly, unsafe, or impractical.
 
-However, removing exploration introduces major challenges, such as extrapolation error in value-based methods and a strong dependence on dataset composition and coverage. In particular, high-quality datasets collected from near-optimal or converged policies often lack sufficient state-action diversity and sub-optimal transitions, which are crucial for stable learning in TD-based RL.
+However, removing exploration introduces major challenges, such as extrapolation error in value-based methods and a strong dependence on dataset composition and coverage. In particular, high-quality datasets collected from near-optimal or converged policies often lack sufficient state-action diversity and sub-optimal transitions, which are crucial for stable learning in Temporal Difference (TD)-based RL.
 
 Modern approaches such as DQN+BC and TD3+BC address these issues by combining RL with Behavior Cloning (BC) regularization, merging RL and supervised learning in a deep learning setting.
 
