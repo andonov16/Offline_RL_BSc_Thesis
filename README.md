@@ -110,11 +110,13 @@ All experiments were conducted in the LunarLander-v2 environment with an 8-dimen
 notebooks/data_exploration.ipynb
  ```
 
+Although the environment is deterministic, each episode starts from a randomized initial state, with small variations in position, velocity, and angular velocity. This makes LunarLander-v2 well suited for analyzing extrapolation error in offline RL.
+
 ### Algorithms and Variations
 Three Q-learning variants were evaluated: 
-- DQN-only ($\theta = 0$), which ignores the BC policy; 
-- DQN+BC: the hyperparameter $\theta$ controls the strength of BC regularization by constraining the Q-update toward dataset actions;
-- BC-only ($\theta = 1$), where the Q-network is trained using only the action predicted by the BC policy. 
+- DQN-only ($\tau = 0$): ignores the BC policy; 
+- DQN+BC: the hyperparameter $\tau$ controls the strength of BC regularization by constraining the Q-update toward dataset actions;
+- BC-only ($\tau = 1$): the Q-networks are trained using only the action predicted by the BC policy. 
 
 
 Each variant was tested with five state representations (raw plus four normalization methods), resulting in 15 agents per dataset and 30 agents in total. All BC models were trained separately before DQN+BC training.
@@ -130,12 +132,52 @@ DQN+BC agents were evaluated exclusively in the live environment over 1000 seede
 ---
 
 ## Results
-TODO
+
+### Online Agent Reward Distributions (RB vs FP)
+Both datasets produce multimodal reward distributions with relatively high variance. This indicates that the mean reward alone is not a reliable summary statistic, and that comparing full reward distributions is necessary to properly evaluate agent performance.
+
+![Original Online DQN agent accumulated rewards distribtuion](plots/rb_fp_reward_analysis_fig.png)
+
+
+
+### BC Performance on the Test Subsets and in the Live Environment
+BC trained on the FP dataset clearly outperforms BC trained on RB. FP BC closely imitates a single near-optimal policy, while RB BC struggles due to higher variance and policy mixture in the dataset. This is reflected both in live-environment rewards and imitation accuracy.
+
+| BC Agent Type | Balanced Accuracy (Test)| Macro Recall (Test) | Macro F1 (Test) |
+|----------|----------|----------|----------|
+| RB BC   | 0.56  | 0.56   | 0.51   |
+| FP BC   | 0.98  |  0.98   | 0.96   |
+
+More results on the test subsets including but not limited to confusion matrices, class-specific evaluation metrics and more can be found in:
+``` All evaluation metrics results for BC
+notebooks/BC/BC_evaluation.ipynb
+```
+
+
+FP BC achieves almost perfect imitation, while RB BC performs significantly worse. This gap highlights the increased difficulty of cloning behavior from a diverse, multi-policy dataset.
+
+
+![BC agents accumulated rewards distribtuion](plots/liven_env_1000_ep_eval_rb_fp.jpg)
+
+### Offline DQN+BC Performance Across Datasets and Normalizations
+
+Despite weaker BC performance, RB-based DQN+BC agents consistently outperform FP-based ones across all normalization strategies and algorithm variants. The best overall performance is achieved with DQN+BC using robust normalization on the RB dataset.
+
+This confirms prior works` findings that dataset diversity is more important than BC imitation quality alone in offline RL. RB datasets provide wider state-action coverage and include sub-optimal transitions, which reduce extrapolation error and improve the stability of TD-based learning. In contrast, FP datasets lack such diversity and expose the agent to fewer sub-optimal signals during training.
+
+![DQN+BC agents accumulated rewards distribtuion](plots/DQN_BC_experiments_summary_live_env_1000_ep_eval_rb_fp.jpg)
+
 
 ---
 
 ## Limitations
-TODO
+This project has several limitations that should be considered when interpreting the results and in future work:
+
+-  __Discrete action space only__: All experiments were conducted in a discrete action setting. The findings should be validated in continuous action environments to assess their generality (e.g. using TD3+BC).
+
+- __Single environment__: Experiments were performed exclusively on the Lunar Lander environment. Replicating the study across multiple environments is necessary to draw more general conclusions.
+
+- __Limited scope of normalization analysis__: While the results show that state normalization can significantly improve offline RL performance, they do not establish which normalization methods are best in general. Broader evaluation across multiple environments and datasets is required.
 
 ---
 
