@@ -1,6 +1,7 @@
 # Offline Reinforcement Learning
+## TODO: write a good subtitle
 
-## Project Overview
+## Introduction
 
 Offline Reinforcement Learning (Offline RL) learns policies from a fixed dataset, without interacting with the environment during training. This is useful when online interaction is costly, unsafe, or impractical.
 
@@ -38,7 +39,7 @@ Standard DQN+BC implementations train the BC agent and Q-function together. This
 In this project, BC is trained first and then used in DQN+BC. This allows BC and RL to use different training strategies, such as separate pruning, early stopping, and batch sizes. Furtheremore, starting DQN+BC with a fully trained BC model improves stability and performance from the very first mini-batch, avoiding the initial “burn-in” period of joint training. The trade-off is a slightly higher computational cost and added implementational omplexity due to separate training pipelines.
 
 
-### State Normalization Study:
+### State Normalization Study
 Offline RL is sensitive to the distribution of states in the dataset, and feature normalization can help improve stability and performance. This project evaluates five state normalization methods: raw (no normalization), max-abs, min-max, robust, and standard (z-score).
 
 The goal is to test whether normalizing states improves performance and to identify which normalization techniques work best in offline DQN+BC.
@@ -61,6 +62,11 @@ To test the hypotheses, each agent is evaluated across 10 variations: 5 normaliz
 > [!NOTE]
 > The datasets used in this project were provided by my supervisor as part of the task description.
 
+A full statistical analysis of the training subsets used for RB and FP can be found in the notebook:
+
+```Data Exploration
+notebooks/data_exploration.ipynb
+```
 
 ---
 
@@ -69,30 +75,57 @@ In adition to the Raw state-action pairs the following 4 normalization technique
 
 - Min-Max [0,1] – Scales each feature to the [0,1] range:
 
-$$x\prime = \frac{x - x_{min}}{x_{max} - x_{min}}$$
+$$x^\prime = \frac{x - x_{min}}{x_{max} - x_{min}}$$
 
 - Max-Abs[-1;1] - Scales features by their maximum absolute value. Preserves zeros and negative values:
 
-$$x\prime = \frac{x}{|x_{max}|}$$
+$$x^\prime = \frac{x}{|x_{max}|}$$
 
 
 - Standard (z-score) - Centers features to mean 0 and standard deviation 1:
 
-$$ x\prime= \frac{x - x_{mean}}{\sigma + \epsilon} $$
+$$ x^\prime= \frac{x - x_{mean}}{\sigma + \epsilon} $$
 
 > [!Note] 
 > To avoid division by 0 a small positive constant $\epsilon=10^{-6}$ was added to the denominator.
 
 - Robust - Scales features using median and interquartile range (IQR). Makes the models less sensitive to outliers:
 
-$$ x\prime = \frac{x-x_{median}}{x_{Q3} - x_{Q1}} $$
+$$ x^\prime = \frac{x-x_{median}}{x_{Q3} - x_{Q1}} $$
 
 
+
+> [!Note] 
+> Normalization statistics (e.g. mean, standard deviation, min/max) were computed separately for the RB and FP datasets using a training subset, and then kept fixed during agent training.
 
 ---
 
 ## Experimental Setup
-TODO
+
+
+### Environment
+All experiments were conducted in the LunarLander-v2 environment with an 8-dimensional continuous state space and a discrete action space with four actions controlling the lander’s engines. Episodes end after successful landing, crash, or timeout, with a shaped reward function that encourages safe landings and fuel efficiency. More information about the environment, states, actions and reward structure can be found in:
+
+ ```Info about the Environment
+notebooks/data_exploration.ipynb
+ ```
+
+### Algorithms and Variations
+Three Q-learning variants were evaluated: 
+- DQN-only ($\theta = 0$), which ignores the BC policy; 
+- DQN+BC: the hyperparameter $\theta$ controls the strength of BC regularization by constraining the Q-update toward dataset actions;
+- BC-only ($\theta = 1$), where the Q-network is trained using only the action predicted by the BC policy. 
+
+
+Each variant was tested with five state representations (raw plus four normalization methods), resulting in 15 agents per dataset and 30 agents in total. All BC models were trained separately before DQN+BC training.
+ 
+
+### Evaluation
+BC agents were evaluated on held-out test subsets to measure how well they mimic the behavior of the original online DQN agent, using balanced accuracy as the metric. The best BC model for each dataset (RB and FP respectufully) was also evaluated in the live environment over 1000 seeded episodes.  
+
+DQN+BC agents were evaluated exclusively in the live environment over 1000 seeded episodes, with performance assessed using the kernel density estimation (KDE) of total episode returns.
+
+
 
 ---
 
