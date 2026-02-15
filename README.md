@@ -1,5 +1,5 @@
-# Offline Reinforcement Learning
-## TODO: write a good subtitle
+# Practical Considerations and Training Strategies for Modern Offline Reinforcement Learning
+## Bachelor’s Thesis in AI, SS25-SS26, JKU
 
 ## Introduction
 
