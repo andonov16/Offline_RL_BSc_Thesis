@@ -23,7 +23,7 @@ This project investigates DQN+BC in the [Lunar Lander](https://gymnasium.farama.
 - [Experimental Setup](#experimental-setup)
 - [Results](#results)
 - [Limitations](#limitations)
-- [How to Run](#how-to-run)
+- [How to Run this Project?](#how-to-run-this-project?)
 
 
 ---
@@ -181,14 +181,38 @@ This project has several limitations that should be considered when interpreting
 
 ---
 
-## How to Run
-TODO
+## How to Run this Project?
+This section explains how to run the provided demos, inspect the trained models, and reproduce the experiments with custom settings.
+
+### 1. Clone the repository and install all dependencies.
 ```bash
-git clone https://github.com/andonov16/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/andonov16/Offline_RL_BSc_Thesis.git
+cd Offline_RL_BSc_Thesis
 pip install -r requirements.txt
-python train.py
 ```
+
+### 2. Run visual demonstrations on how the best performing variant of each experiment performs in the live env.:
+To observe the behavior of the best-performing agents in the live environment, run the corresponding test scripts.
+
+Example: DQN+BC trained on the RB dataset:
+```bash
+py tests/DQN/DQN_BC/test_rb_dqn_bc.py
+```
+
+### 3. Rerun experiments or change hyperparameters:
+This project tracks training progress via log files. If logs already exist, training will resume from the last recorded state. To restart experiments from scratch, delete all existing logs:
+
+```bash
+rm -rf logs/
+```
+Experiment configurations are defined in YAML files. For example, DQN+BC settings can be found in:
+
+```DQN+BC Config files and settings
+config/DQN/DQN_BC/dqn_bc_experiments.yaml
+```
+
+> [!Note]
+> Hyperparameter tuning is handled using Optuna. The configuration files specify both fixed values and search spaces for each hyperparameter.
 ---
 
 ## Author
