@@ -184,14 +184,14 @@ This project has several limitations that should be considered when interpreting
 ## How to Run this Project?
 This section explains how to run the provided demos, inspect the trained models, and reproduce the experiments with custom settings.
 
-### 1. Clone the repository and install all dependencies.
+### 1. Setup and Installation
 ```bash
 git clone https://github.com/andonov16/Offline_RL_BSc_Thesis.git
 cd Offline_RL_BSc_Thesis
 pip install -r requirements.txt
 ```
 
-### 2. Run visual demonstrations on how the best performing variant of each experiment performs in the live env.:
+### 2. Run Already Trained Agent Demos
 To observe the behavior of the best-performing agents in the live environment, run the corresponding test scripts.
 
 Example: DQN+BC trained on the RB dataset:
@@ -199,7 +199,7 @@ Example: DQN+BC trained on the RB dataset:
 py tests/DQN/DQN_BC/test_rb_dqn_bc.py
 ```
 
-### 3. Rerun experiments or change hyperparameters:
+### 3. Reproduce Experiments and Tune Hyperparameters
 This project tracks training progress via log files. If logs already exist, training will resume from the last recorded state. To restart experiments from scratch, delete all existing logs:
 
 ```bash
