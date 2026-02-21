@@ -1,2 +1,30 @@
 .idea
 .venv
+
+# LaTeX build artifacts (thesis)
+thesis/*.aux
+thesis/*.log
+thesis/*.out
+thesis/*.toc
+thesis/*.lof
+thesis/*.lot
+thesis/*.bbl
+thesis/*.blg
+thesis/*.synctex.gz
+thesis/*.fls
+thesis/*.fdb_latexmk
+
+thesis/.github
+
+# LaTeX build artifacts (recursive, safe)
+**/*.aux
+**/*.log
+**/*.out
+**/*.toc
+**/*.lof
+**/*.lot
+**/*.bbl
+**/*.blg
+**/*.synctex.gz
+**/*.fls
+**/*.fdb_latexmk

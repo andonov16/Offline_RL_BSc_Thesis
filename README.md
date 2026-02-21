@@ -23,6 +23,7 @@ This project investigates DQN+BC in the [Lunar Lander](https://gymnasium.farama.
 - [Experimental Setup](#experimental-setup)
 - [Results](#results)
 - [Limitations](#limitations)
+- [Thesis Template and LaTeX Sources](#thesis-latex-template-sources)
 - [How to Run this Project?](#how-to-run-this-project?)
 
 
@@ -214,6 +215,15 @@ config/DQN/DQN_BC/dqn_bc_experiments.yaml
 > [!Note]
 > Hyperparameter tuning is handled using Optuna. The configuration files specify both fixed values and search spaces for each hyperparameter.
 ---
+
+## Thesis LaTeX Template
+The LaTeX sources in the `thesis/` directory are based on the JKU thesis report template recommended by the Institute for Machine Learning (JKU).
+
+The original template is available on GitHub:
+[JKU thesis report LaTeX template](https://github.com/michaelroland/jku-templates-report-latex)
+
+The template is included without modification and is used under its original license (see `thesis/LICENSE` for details).
+All thesis text, figures, and experimental results are my own work unless stated otherwise.
 
 ## Author
 - [Miroslav Andonov](https://github.com/andonov16)
