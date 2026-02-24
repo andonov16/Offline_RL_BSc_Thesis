@@ -432,3 +432,49 @@ def plot_DQN_experiments_live_env_eval_KDE_summary(rb_rewards: Dict[str, Dict[st
 
     return fig
 
+
+
+def plot_BC_experiments_live_env_eval_KDE_summary(rb_rewards: Dict[str, Dict[str, np.ndarray]],
+                                                   fp_rewards: Dict[str, Dict[str, np.ndarray]],
+                                                   fig_title: str = 'BC: Accumulated Rewards Distribution after 1000 Episodes (Live)',
+                                                   f_size: Tuple[int, int] = (16,16),
+                                                   kde_kwargs: dict = {'linewidth': 2, 'alpha': 0.5},
+                                                   sharex: bool =True,
+                                                   sharey: bool = True,
+                                                   xlim: Tuple[float, float] = (-400, 400),
+                                                   ylim: Tuple[float, float] = (0, 0.015)
+                                                   ) -> plt.Figure:
+    fig, axes = plt.subplots(nrows=2,
+                             ncols=3,
+                             figsize=f_size,
+                             sharex=sharex,
+                             sharey=sharey)
+    if fig_title:
+        fig.suptitle(fig_title, fontsize=16)
+
+    experiment_names = ['BC model']
+    norm_names = [ 'raw', 'max_abs', 'min_max', 'robust', 'standard']
+
+
+    axes = axes.flatten()
+    for i, experiment_name in enumerate(experiment_names):
+        for j, norm_name in enumerate(norm_names):
+            ax = axes[j]
+
+            if xlim is not None:
+                ax.set_xlim(xlim)
+
+            if ylim is not None:
+                ax.set_ylim(ylim)
+
+            ax.set_title(f'{experiment_name}: {norm_name} Rewards')
+
+            sns.kdeplot(rb_rewards[norm_name], ax=ax, label='RB agent', color='blue', **kde_kwargs)
+            sns.kdeplot(fp_rewards[norm_name], ax=ax, label='FP agent', color='orange', **kde_kwargs)
+
+            ax.legend()
+            ax.grid(True)
+
+    axes[-1].set_visible(False)
+    return fig
+

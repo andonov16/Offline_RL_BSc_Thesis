@@ -10,13 +10,14 @@ from tqdm.auto import tqdm
 
 def BC_evaluate_model_in_live_env(env_test_params = dict,
                                model_name: str = 'Replay Buffer',
+                               model_variant_name: str = 'raw',
                                norm_technique: torch.nn.Module | None = None,
                                model: torch.nn.Module |None = None # torch.jit.load('../../models/BC/replay_buffer/BC_standard.pt')
                         ) -> np.array:
     rewards = []
 
     model.eval()
-    log_subfolder = f'../../logs/BC/{model_name}/BC_live_env_performance_test/'
+    log_subfolder = f'../../logs/BC/{model_name}/BC_live_env_performance_test/{model_variant_name}'
     tensorboard_log_subfolder = os.path.join(log_subfolder, 'tensorboard')
     if not os.path.exists(log_subfolder):
         os.makedirs(log_subfolder)

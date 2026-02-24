@@ -9,7 +9,7 @@ import numpy as np
 
 from src.datasets import BCDataset
 from src.normalization import NormalizationModule
-from src.tuning.BC_objective import BCObjectiveTorch
+from src.tuning.bc_objective import BCObjectiveTorch
 
 
 def prepare_data(df: pd.DataFrame,

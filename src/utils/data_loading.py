@@ -170,6 +170,15 @@ def _load_rewards_for_single_experiment(experiment_name: str = 'DQN_BC', dataset
         rewards_dict[norm_name] = load_rewards_from_tensorboard(log_path)
     return rewards_dict
 
+def _load_rewards_for_single_experiment_BC(dataset_name: str = 'replay_buffer') -> Dict[str, np.array]:
+    norm_names = ['max_abs', 'min_max', 'raw', 'robust', 'standard']
+    rewards_dict: Dict[str, np.array] = {}
+
+    for norm_name in norm_names:
+        log_path = f'../../logs/BC/{dataset_name}/BC_live_env_performance_test/{norm_name}/tensorboard'
+        rewards_dict[norm_name] = load_rewards_from_tensorboard(log_path)
+    return rewards_dict
+
 
 def load_rewards_for_all_experiments(dataset_name: str = 'replay_buffer') -> Dict[str, Dict[str,np.ndarray]]:
     experiment_names = ['DQN_only', 'DQN_BC', 'BC_only']
@@ -177,4 +186,9 @@ def load_rewards_for_all_experiments(dataset_name: str = 'replay_buffer') -> Dic
     rewards_dict: Dict[str, Dict[str,np.ndarray]] = {}
     for experiment_name in experiment_names:
         rewards_dict[experiment_name] = _load_rewards_for_single_experiment(experiment_name=experiment_name, dataset_name=dataset_name)
+    return rewards_dict
+
+
+def load_rewards_for_all_experiments_BC(dataset_name: str = 'replay_buffer') -> Dict[str,np.ndarray]:
+    rewards_dict = _load_rewards_for_single_experiment_BC(dataset_name=dataset_name)
     return rewards_dict
