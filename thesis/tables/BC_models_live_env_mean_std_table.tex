@@ -1,0 +1,30 @@
+\begin{table}[!ht]
+\centering
+\caption{Performance of BC and DQN+BC models across normalization methods in the live environment (mean $\pm$ SD over 1000 uniquely seeded episodes).}
+\label{tab:bc_live_env_mean_std}
+
+\begin{tabularx}{\textwidth}{%
+  p{2cm}                   % first column: Model Type, left-aligned by default
+  >{\centering\arraybackslash}p{1.5cm}  % second column: Dataset, centered
+  *{5}{>{\centering\arraybackslash}X}   % remaining columns: flexible width, centered
+}
+\hline
+\textbf{Model Type} 
+& \textbf{Dataset} 
+& \textbf{Raw} 
+& \textbf{Max-Abs} 
+& \textbf{Min-Max}
+& \textbf{Robust}
+& \textbf{Standard} \\
+\hline
+BC (Supervised) & RB &  $-68.46 \pm 66.00$ & $-70.30 \pm 52.49$ & $-110.36 \pm 102.46$ & $-78.09 \pm 73.00$ &$-101.58 \pm 114.18$ \\
+                & FP &  $80.62 \pm 105.57$ & $79.45 \pm 106.91$ & $79.30 \pm 106.19$ & $82.46 \pm 105.22$ & $78.27 \pm 107.35$\\
+BC-only ($\tau=1$) & RB & $46.11 \pm 128.83$ & $-183.57 \pm 88.16$ & $-957.51 \pm 1405.13$ &  $-62.46 \pm 140.14$ & $10.09 \pm 192.92$\\
+           & FP & $-125.81 \pm 200.00$ & $-307.87 \pm 209.02$ & $-289.63 \pm 78.97$ & $-313.57 \pm 140.14$ & $-160.24 \pm 277.97$  \\
+DQN+BC ($\tau$ hyperparam) & RB & $-15.64 \pm 125.33$ & $-102.22 \pm 103.47$ & $-873.93 \pm 206.89$ & $164.82 \pm 246.18$ & $52.50 \pm 66.71$ \\
+                           & FP & $-344.52 \pm 198.37$ & $-198.37 \pm 206.89$ & $-354.44 \pm 246.87$ & $-133.28 \pm 107.18$ & $696.79 \pm 40.60$ \\
+DQN-only ($\tau=0$) & RB & $158.01 \pm 108.12$ & $-139.89 \pm 197.78$ & $-790.27 \pm 368.32$ & $80.27 \pm 124.39$ & $111.88 \pm 81.88$ \\
+           & FP & $-472.50 \pm 120.42$ & $-100.30 \pm 76.56$ & $-744.70 \pm 302.64$ & $-437.49 \pm 316.82$ & $-153.15 \pm 78.71$ \\
+\hline
+\end{tabularx}
+\end{table}

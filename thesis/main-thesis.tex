@@ -167,6 +167,9 @@
 \usepackage{import}
 \usepackage{amsfonts}
 \usepackage{subfigure}
+\usepackage{tabularx}
+\usepackage{algorithmic}
+\usepackage{algorithm}
 
 
 
@@ -199,7 +202,7 @@
 %% 
 
 %% Command \title{title}: sets the title of your thesis
-\title{TODO Space for your thesis title}
+\title{Practical Considerations and Training Strategies for Modern Offline Reinforcement Learning}
 
 %% Command \titleshort{short title}: sets an abbreviated version of the thesis title for page heads
 %\titleshort{Optional space for your abbreviated title}
@@ -314,13 +317,15 @@
 
 \input{sections/01_introduction}
 
-\input{sections/02_datasets}
+\input{sections/02_background}
 
-\input{sections/03_methods}
+\input{sections/03_datasets}
 
-\input{sections/04_results}
+\input{sections/04_methods}
 
-\input{sections/05_discussion}
+\input{sections/05_results}
+
+\input{sections/06_discussion}
 
 
 
@@ -344,7 +349,7 @@
 %% 
 %% Make sure to start the bibliography on a new odd page (odd is only relevant in twoside layout)
 \cleardoubleoddpage
-% \printbibliography
+\printbibliography
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -356,7 +361,7 @@
 %% Include your appendix chapters
 %% 
 
-\import{./sections/appendix/10_appendix}
+\input{./sections/appendix/10_appendix}
 % ...
 
 %% 

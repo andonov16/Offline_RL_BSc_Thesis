@@ -5,7 +5,22 @@
 
 \cleardoubleoddpage%  Make sure to start abstract on a new odd page
 \begin{abstract*}
-Space for your abstract.
+
+
+Offline reinforcement learning (RL) allows agents to learn from a fixed dataset of previously collected transitions rather than interacting with the environment during training. This approach is particularly useful in domains where online interaction is risky, expensive, or impractical. However, training on a fixed dataset introduces the challenge of extrapolation error, where agents may overestimate the value of out-of-distribution state-action pairs due to the lack of exploration.
+
+This work investigates several factors that influence the stability and performance of offline RL agents, focusing on the interaction between Behavior Cloning (BC) and Batch-Constrained Deep Q-Learning (BCQ). In particular, we examine the effects of decoupling BC and BCQ training, the impact of state normalization techniques, and the role of dataset composition.
+
+Supervised BC models and BCQ agents were evaluated in the Lunar Lander environment using two datasets with different characteristics and multiple normalization methods. The results show that decoupling BC and BCQ training can produce good-performing agents while allowing both components to be optimized independently. State normalization improved BCQ performance in several configurations, with robust and standard normalization performing best. The experiments also confirm previous findings that BC benefits from near-optimal datasets, while BCQ performs better with more diverse data containing suboptimal transitions.
+
+Overall, the findings show the importance of training strategy, state normalization, and dataset composition in offline RL.
+
+
+
+
+
+
+
 \end{abstract*}
 
 %% 
@@ -17,12 +32,12 @@ Space for your abstract.
 %% Abstract of your thesis in an additional language
 %% 
 
-\cleardoubleoddpage%  Make sure to start abstract on a new odd page
-\begin{otherlanguage}{ngerman}
-\begin{abstract*}
-Platz für deine Kurzfassung.
-\end{abstract*}
-\end{otherlanguage}
+%\cleardoubleoddpage%  Make sure to start abstract on a new odd page
+%\begin{otherlanguage}{ngerman}
+%\begin{abstract*}
+%Platz für deine Kurzfassung.
+%\end{abstract*}
+%\end{otherlanguage}
 
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

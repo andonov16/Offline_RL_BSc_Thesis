@@ -1,0 +1,27 @@
+\begin{table}[!ht]
+\centering
+\caption{Mean and SD statistics for RB and FP training subsets}
+\label{tab:data_exploration_summary_statistics}
+
+\renewcommand{\arraystretch}{1.2}  % increase row height
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{l c c c c c c c c}
+\hline
+\textbf{Dataset} 
+& \textbf{Metric} 
+& \textbf{$x$} 
+& \textbf{$y$}
+& \textbf{$lv_x$} 
+& \textbf{$lv_y$} 
+& \textbf{angle}
+& \textbf{angular velocity}
+& \textbf{reward} \\
+\hline
+\multirow{2}{*}{\textbf{RB}} & \textbf{Mean} & 0.0030 & 0.6293 & -0.0047 & -0.0854 & 0.0031 & 0.0005 & -0.1799 \\
+                    & \textbf{SD} & 0.3170 & 0.3922 & 0.2586 & 0.1874 & 0.1385 & 0.0977 & 3.5129 \\
+\multirow{2}{*}{\textbf{FP}} & \textbf{Mean} & -0.0323 & 0.4578 & -0.0212 & -0.0734 & -0.0005 & -0.0005 & 0.0978 \\
+                    & \textbf{SD} & 0.2806 & 0.3664 & 0.2041 & 0.0884 & 0.0583 & 0.0422 & 3.4109 \\
+\hline
+\end{tabular}
+}
+\end{table}

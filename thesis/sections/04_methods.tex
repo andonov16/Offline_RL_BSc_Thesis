@@ -1,0 +1,166 @@
+\cleardoubleoddpage
+\chapter{Methods}
+\label{app:Methods}
+
+In order to investigate the research questions described in Section~\ref{sec:introduction}, this work focuses on a discrete offline RL algorithm that uses BC as a regularization term.
+
+The general methodology follows a two-stage training strategy. Firstly, supervised BC models are trained independently in a classical supervised learning setting. Each BC model takes a state as input and predicts the action that the original online DQN agent is most likely to take in that state, based on the dataset on which it was trained (either the RB or the FP dataset). This stage represents a standard multi-class classification problem.
+
+Secondly, after a BC model has fully converged, its frozen version is used as a regularization term during training for an offline RL agent. At this stage, we systematically examine how different levels of BC regularization, dataset choices, and state normalization settings influence performance.
+
+
+The offline RL algorithm used in this work is based on the approach described in \cite{BCQ_benchmarking}. There DQN is combined with a generative model, which is used together with a threshold parameter $\tau$ to filter and restrict the set of actions considered during Q-network training to those that are sufficiently likely under the behaviour policy. In this work, the generative model is implemented as a supervised BC classifier.
+
+The exact formulation of the algorithm used in \cite{BCQ_benchmarking} is shown in Algorithm~\ref{alg:bcq_original}. Throughout this work, all offline RL algorithms derived from or inspired by Algorithm~\ref{alg:bcq_original}, which combine DQN with BC=based regularization, are referred as DQN+BC.
+
+
+
+
+
+\section{Supervised Behavioral Cloning}
+\label{sec:supervised_Behaviour_cloning}
+Before introducing the offline DQN+BC training procedure, we define the BC models used in this work in terms of architecture, training procedure, and loss formulation.
+
+The goal of the BC model is to act as a supervised classifier that takes an 8-dimensional environment state as input and predicts the next action taken by the original online DQN agent. Since the action space is discrete and consists of four possible actions, this is a multi-class classification task.
+
+The model architecture of choice here is a fully connected Feed-Forward Neural Network (FNN). The input layer consists of 8 neurons corresponding to the state dimensions. The output layer consists of 4 neurons, representing the log-probabilities of selecting each action. Between the input and output layers, a configurable number of hidden layers is used, allowing the exact model architecture to be tuned during hyperparameter optimization.
+
+To introduce non-linearity, the Gaussian Error Linear Units (GeLU) activation function \cite{gelu} is applied after each linear transformation, defined as follows:
+
+$$ GeLU(x) = x\cdot \frac{1}{2}(1 +erf(\frac{x}{\sqrt2} ))$$
+
+
+Dropout regularization is applied after each hidden layer, more precisely after the GeLU activation, to reduce overfitting and improve generalization.
+
+To improve training stability, Layer Normalization is applied exactly once at the input layer, before the activation function. Layer Normalization is preferred over Batch Normalization because the state features are not I.I.D., as discussed in Chapter~\ref{app:Datasets_and_the_Environment}. Using Batch Normalization in this setting leads to lower performance, likely due to correlations between state variables and the episodic structure of the data.
+
+
+To prevent unstable gradients, network weights are initialized using He/Kaiming initialization \cite{he_initialization_weights}, centering the initial weights around zero, which prevents the exploding gradients problem. The supervised learning objective is optimized using the categorical Cross-Entropy loss, which measures the difference between predicted action logits and the true action labels from the dataset.
+
+
+
+
+
+
+\section{The DQN+BC Algorithm}
+\label{sec:the_DQN_BC_algorithm}
+
+A DQN+BC agent learns a Q-network that takes a given state $s$ as input and outputs Q-values for all possible discrete actions in that state.
+
+Following the design choice shown in \cite{BCQ_benchmarking}, we train a single Q-network that outputs Q-values for all actions simultaneously, instead of training separate Q-networks for each action. This design simplifies the implementation and allows for more efficient optimization.
+
+
+The general architecture of the Q-network matches the BC FNN architecture, described above, in terms of hidden layers, activation function, and regularization choices. The key difference is that the Q-network solves a regression problem instead of a classification problem. Instead of predicting action log-probabilities, it estimates expected returns. Therefore, the Cross-Entropy loss used for supervised BC is replaced with the Huber loss, following the implementation described in \cite{BCQ_benchmarking}. The Huber loss is less sensitive to outliers than MSE and is commonly used in DQN-based implementations to stabilize training. However, it should be noted that all experiments presented in this work can be reproduced using MSE loss or similar regression losses without changing the algorithmic structure.
+
+
+\input{algorithms/original_dqn_bc_algorithm}
+
+
+
+
+
+\section{Offline DQN+BC with Fixed BC Models}
+\label{sec:offline_dqn_bc_with_fixed_bc_models}
+
+To reproduce DQN+BC experiments using frozen BC models, only minimal modifications to the original algorithm are necessary.
+
+In particular, the gradient and loss computation step for the generative model presented in the original formulation is removed, since the BC model is already trained and kept fixed throughout offline RL training. As a result, the BC component acts purely as a regularization without undergoing any further updates.
+
+Additionally, a state normalization module is introduced. This module can either act as a dummy identity transformation, corresponding to raw state inputs, or apply one of the four normalization techniques described in Chapter~\ref{app:Datasets_and_the_Environment}. Each state is normalized before being passed to the Q-network during training.
+
+The complete modified algorithm used in this work is shown in Algorithm~\ref{alg:bcq_normalized}.
+
+
+\input{algorithms/modified_dqn_bc_algorithm_for_this_work}
+
+
+
+
+
+
+
+\section{Distinction between Supervised BC models and BC-only DQN+BC agents}
+\label{sec:distinction_between_supervised_bc_models_and_BC_only_DQN_BC_agents}
+
+Before we proceed further, it is important to clarify the terminology used in this work concerning supervised BC models and BC-only DQN+BC agents.
+
+On the one hand, a Supervised BC model refers to the classifier described in Section~\ref{sec:supervised_Behaviour_cloning}. Such models take a state as input, output a log-probability distribution over actions, and are trained using supervised learning. They do not estimate Q-values and do not directly optimize returns.
+
+On the other hand, a BC-only DQN+BC agent refers to a Q-network trained using Algorithm~\ref{alg:bcq_normalized} with $\tau=1$. In this setting, only the single most likely action predicted by the supervised BC model is considered during loss computation and weight updates. Although, this configuration is entirely controlled by the BC model, it still learns Q-values within that restricted action space.
+
+
+
+
+
+\section{BC Regularization Strength}
+\label{sec:bc_regularization_strength}
+With respect to the regularization strength in Algorithm~\ref{alg:bcq_normalized}, this work considers three distinct configurations:
+
+\begin{enumerate}[label=\textbullet]
+    \item \textbf{DQN-only ($\tau=0$):} The agent is a pure offline DQN agent. Predictions from the BC model are completely ignored, and no BC regularization is applied.
+
+    \item \textbf{DQN+BC ($\tau \in [0;1]$ is a hyperparameter):} The Q-network is regularized by restricting training updates to actions whose supervised BC probability exceed a given threshold, as defined in  Algorithm~\ref{alg:bcq_normalized}.
+
+    \item \textbf{BC-only ($\tau=1$):} Only the single most likely action predicted by the BC model is considered during training.
+\end{enumerate}
+
+The difference between these configurations lies entirely in the training process. Afterwards, all resulting Q-networks operate identically by taking a state as input and outputting Q-values for all four actions, but with different weights as resulting from the training process.
+
+This setup allows for a controlled analysis of how BC regularization strength affects offline DQN+BC performance independently of the quality of the supervised BC models.
+
+
+
+
+
+\section{Hyperparameter Optimization}
+\label{sec:hyperparameter_optimization}
+
+Hyperparameter optimization is performed using the Optuna framework. Optuna identifies suitable hyperparameter configurations by executing multiple trials and optimizing a reported objective metric, which in this work corresponds to the lowest observed loss during training.
+
+In this setup, Optuna uses the Tree-structured Parzen Estimator to suggest promising hyperparameter values. Early stopping and pruning techniques are applied within each trial to efficiently terminate unpromising runs.
+
+For supervised BC models, training is performed in an epoch-based manner. Early stopping, pruning, and model selection are based on the average validation loss per sample, calculated over the entire epoch, computed over the validation subset.
+
+For DQN+BC agents, training is performed using mini-batches sampled from the training dataset. Early stopping and pruning are based on the average training loss per sample, calculated over the entire mini-batch, with loss values reported every 1000 mini-batches. Early stopping and pruning operate in terms of mini-batches rather than epochs.
+
+This setup simulates practical offline RL training procedures and leverages the decoupling of BC and DQN+BC training to allow different optimization strategies, stopping criteria, and pruning mechanisms tailored to each training procedure.
+
+
+
+
+
+\section{Evaluation Setup}
+\label{sec:evaluation_setup}
+
+To evaluate live environment performance, all supervised BC models and DQN+BC agents are evaluated over 1000 episodes in the online Lunar Lander environment \cite{LunarLanderEnv}.
+
+For a fair and consistent comparison, all 1000 evaluation episodes are distinct and identical across model configurations. To ensure this, a deterministic seeding strategy is applied. A global experimental seed is defined and the seed for episode $i$ is computed as:
+
+$$\text{episode\_seed} = \text{experiment\_seed} + i$$
+
+For example, if the experimental seed is 16, episode 100 is evaluated using seed 116. This setup ensures that each evaluation consists of 1000 unique episodes and that all configurations are evaluated on the same episode sequences.
+
+
+
+\section{Configurations and Agent Variants}
+\label{sec:configurations_and_agent_variants}
+
+The experimental configurations are defined as follows:
+
+For supervised BC models:
+
+\begin{itemize}
+    \item 2 datasets: RB and FP;
+    \item 5 state normalization variants: raw, Min-Max, Max-Abs, Robust, and Standard (z-score);
+\end{itemize}
+
+For offline DQN+BC agents:
+\begin{itemize}
+    \item 2 datasets: RB and FP;
+    \item 5 state normalization variants: raw, Min-Max, Max-Abs, Robust, and Standard (z-score);
+    \item 3 BC regularization strengths: DQN-only, DQN+BC, and BC-only;
+\end{itemize}
+This results in a total of $2 \cdot 5=10$ supervised BC models and a total of $2 \cdot 5 \cdot 3 = 30$ offline DQN+BC agents.
+
+
+This configuration space allows us to investigate how dataset composition, normalization strategies, and regularization strength jointly influence offline RL performance.

@@ -4,23 +4,86 @@
 \chapter{Introduction}
 \label{sec:introduction}
 
+\section{Offline Reinforcement Learning}
+
+Offline, or batch, reinforcement learning (RL) \cite{lange2012batch} enables agents to learn entirely from a fixed dataset of previously collected state-action pairs, without interacting with the environment during training. This approach offers several advantages: it eliminates the need for live environment interactions, avoids the risks associated with deploying untrained agents, and removes the costs and complexities of data collection.  
+
+However, restricting training to a fixed dataset also removes exploration which is a fundamental mechanism to discover optimal policies. This limitation leads to a phenomenon called extrapolation error \cite{fujimoto2019offpolicy}, where the agent overestimates the values of previously unseen or out-of-distribution state-action pairs. These overestimated values can mislead the agent into preferring previously unseen transitions that may not be optimal. Handling extrapolation error is the central challenge in offline RL.
+
+
+
+
+
+\section{Deep Reinforcement Learning Advances and Limitations in Offline Settings}
+
+
+
+Recent advances in deep learning across fields such as computer vision, natural language processing, and drug discovery have demonstrated the ability of neural networks (NNs) to handle high-dimensional and raw-input data effectively. Inspired by these successes, similar techniques have been applied to RL, leading to the development of multiple online deep RL algorithms, including Deep Q-Networks (DQN) \cite{DQN} and Twin-Delayed Deep Deterministic Policy Gradients (TD3) \cite{TD3_online}.
+
+In theory, these online deep RL algorithms can be applied to offline RL, as they are capable of learning from experience tuples. however, in practice, they often fail when trained on fixed datasets due to the extrapolation error described in Section~\ref{sec:introduction}. Temporal-Difference (TD) learning, which powers algorithms like DQN and TD3, updates value estimates based on existing data. When the agent encounters state-action pairs not present in the dataset, these TD updates can produce extremely overestimated values that build up over time, leading to poor performance.
+
+Addressing this challenge is essential for adapting online deep RL methods to offline settings and motivates the integration of additional mechanisms to constrain value estimation to the observed dataset.
+
+
+
+
+
+\section{The Role of Behavioral Cloning}
+
+Behavioral Cloning (BC) is a supervised learning approach that plays a key role in modern offline deep RL. The core idea is that, given a dataset of state-action pairs collected by an expert or near-optimal policy, the agent learns to imitate the observed behavior directly, without relying on reward estimation or TD updates. However, even in BC, extrapolation error can still occur when the agent encounters states not well represented in the dataset, since the model may predict actions that are inconsistent with the underlying expert policy.
+
+BC is commonly used in two main ways in offline RL:
+\begin{enumerate}
+    \item \textbf{Purely supervised policy learning:} BC treats the RL problem as a supervised learning task \cite{BC_ORL_only}. The agent imitates the expert policy using only the provided dataset transitions. No reward signals or TD updates are involved, and the agent learns a fixed policy that replicates the demonstrated behavior as closely as possible.
+    
+    \item \textbf{Regularization for TD-based offline RL:} In more recent approaches, BC is used as a regularization mechanism for online deep RL algorithms adapted to offline setting. Methods like TD3 with Behavioral Cloning (TD3+BC) \cite{fujimoto2021minimalist} or Batch-Constrained Q-Learning (BCQ) \cite{BCQ_benchmarking} use a pretrained BC models to constrain the policy to remain close to the actions observed in the dataset. This regularization reduces the impact of extrapolation error by discouraging the agent from selecting out-of-distribution actions that may have overestimated values.
+\end{enumerate}
+
+Both directions make BC a key tool for stabilizing learning and mitigating the challenges connected to offline RL.
+
+
+
 
 \section{Motivation}
-\label{sec:introduction:motivation}
 
-Space for your introduction.
-A typical introduction consists of a motivation for your thesis, your objectives, your research approach, and finishes with an outlook over your work.
-Of course, different structuring and naming of sections is possible.
+Despite the progress in offline RL, several challenges remain that motivate this work. 
+\begin{enumerate}
+    \item \textbf{Decoupling BC and BCQ training:}  
+    Standard BCQ implementations \cite{BCQ_benchmarking} typically train the BC policy and Q-function jointly. While this setup is computationally efficient, it can create conflicts: BC benefits from stable, large-batch supervised updates, whereas TD-based RL relies on small, noisy mini-batches. Decoupling the two allows each component to use training strategies suited to its characteristics, such as different batch sizes, pruning methods, or early stopping. Initializing BCQ with a fully trained BC model also can potentially improve stability from the first mini-batch and avoids the burn-in phase of joint training.
+    
+    \item \textbf{State normalization:}  
+    Offline RL and deep learning are highly sensitive to the distribution of states in the dataset. Properly normalizing state features can stabilize learning and improve performance. Prior works such as TD3+BC \cite{fujimoto2021minimalist} have mentioned the benefits of standardization, but no systematic study has been conducted to evaluate the impact of different normalization methods in BCQ.
+
+    \item \textbf{Dataset composition:}  
+    The structure and diversity of the dataset used for offline RL significantly influences performance \cite{dataset_composition_rl_effects}. Pure BC approaches benefit from datasets collected by near-optimal policies. In contrast, offline TD-based methods regularized with BC have been shown to benefit from datasets containing a broader range of transitions, including sub-optimal or exploratory actions.
+\end{enumerate}
+
+Addressing these three aspects may provide a deeper of the factors that influence the stability and performance of offline RL agents.
 
 
-\section{Objectives and Approach}
-\label{sec:introduction:objectives}
-
-
-\section{Outline}
-\label{sec:introduction:outline}
 
 
 
-%% 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Contributions of This Work}
+
+This work aims to make three main contributions to the study of BCQ and offline RL in general:
+
+\begin{enumerate}
+    \item \textbf{Decoupled BC and BCQ training:}  
+    BC is trained separately before being used in BCQ, allowing each component to use training strategies optimized for its needs and improving stability from the start.
+
+    \item \textbf{State normalization study:}  
+    We perform a systematic evaluation of different state normalization methods to assess their impact on stability and performance in BCQ.
+
+    \item \textbf{Dataset quality and diversity analysis:}  
+    The effect of dataset composition is investigated, comparing two datasets - a diverse, exploratory dataset and a dataset collected from fully trained agents to understand their impact on offline BCQ performance. Using this setup aims to confirm or disprove findings from prior works investigating optimal data composition for supervised BC and RL training in an offline setting.
+\end{enumerate}
+
+
+
+
+
+
+

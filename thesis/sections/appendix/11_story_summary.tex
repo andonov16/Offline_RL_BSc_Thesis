@@ -1,3 +1,68 @@
 \cleardoubleoddpage
 \chapter{Story Summary}
 \label{app:story-summary}
+
+
+\section{What is the central question?}
+\label{app:what-is-the-central-question}
+
+This work investigates practical training strategies in modern offline RL and how specific design choices affect performance and stability. In particular, it addresses the following questions:
+
+\begin{enumerate}
+    \item \textbf{BC Decoupling:} Can BC (pre-)training be decoupled from offline RL algorithms that use it as an implicit regularization technique, e.g. via action filtering, without degrading performance?
+
+    \item \textbf{Normalization Impact:} What is the impact of state normalization on offline RL, and can appropriate normalization strategies consistently improve learning and evaluation performance in the environment?
+
+    \item \textbf{Dataset Composition:} How does the composition of the training dataset influence offline RL performance, and how do RB–based datasets compare to near-optimal FP datasets in producing high-quality offline RL agents?
+\end{enumerate}
+
+
+\section{Why is this question important?}
+Modern offline RL algorithms often combine TD-based RL methods with supervised learning regularization techniques. These components have different training requirements: TD-based RL generally benefits from small mini-batches with relatively noisy loss gradients, while supervised learning approaches typically rely on larger batches with more stable gradients and multiple epochs to achieve consistent convergence. Because offline RL often relies on deep NNs, the scale of input features can significantly affect learning and performance, making it important to investigate how state normalization influences stability and overall results.
+
+
+
+
+\section{What evidence/data (variables) are needed to answer this question?}
+To address research questions, this study evaluates 30 distinct variations of the DQN+BC agent that differ in three key configuration dimensions: BC regularization strength (DQN-only, DQN+BC, and BC-only), state normalization technique (min-max, max-abs, robust, standard, and raw) and training data set. For each configuration, two versions are trained using different datasets: RB data collected during the original online training and FP data collected from the converged near-optimal policy. The primary variables used for analysis are the distributions of accumulated rewards obtained in the live environment for each agent variation, along with their corresponding standard deviations.
+
+
+
+
+
+\section{What methods are used to get this evidence/data?}
+After training, each of the 30 distinct DQN+BC agent configurations is evaluated in the live environment to obtain distributions of accumulated rewards, means, and standard deviations. To ensure fair and comparable results, all agents are tested on the same set of 1,000 uniquely seeded episodes, allowing direct comparison of return distributions and their standard deviations across configurations. This controlled evaluation is essential in offline RL, as extrapolation error and variety in initial state initialization can cause large performance variance. Without evaluating all agents on the same seeded episodes, differences in accumulated reward distributions may be a result of evaluation noise rather than meaningful performance differences.
+
+
+
+
+\section{What analyses must be applied to the data to answer the central question?}
+The following analyses were applied to address the three central questions described in Section \ref{app:what-is-the-central-question}:
+
+\begin{enumerate}
+    \item \textbf{BC Decoupling:} accumulated reward distributions of offline DQN+BC configurations are compared with those of the original online DQN agent in the live environment. A configuration is considered successful if it consistently achieves 150–200 or more accumulated reward per episode, showing whether offline setups can meet the environment’s performance requirements.
+
+    \item \textbf{Normalization Impact:} accumulated reward distributions are compared across configurations, focusing on raw vs normalized versions across all datasets and BC regularization settings. If normalization consistently yields higher rewards, it is considered meaningful and important.
+
+    \item \textbf{Dataset Composition:} accumulated reward distributions are compared between RB and FP datasets across all normalization and BC regularization settings. If RB consistently yields higher rewards than FP regardless of configuration, it indicates that dataset choice systematically affects performance.
+\end{enumerate}
+
+
+
+\section{What evidence/data (values for the variables) were obtained?}
+The imitation capabilities of all supervised  BC model variants are summarized in Table \ref{tab:bc_evaluation_metrics}.
+
+The performance of all supervised BC models in the live environment can is summarized in Figure \ref{fig:BC_live_env_evaluation}.
+
+The performance of all supervised DQN+BC agents in the live environment can is summarized in Figure \ref{fig:DQN_BC_live_env_evaluation}.
+
+
+\section{What were the results of the analyses?}
+Several DQN+BC configurations successfully matched or even surpassed the performance of the original online DQN agent, consistently achieving accumulated rewards of 150 or higher, and in some cases reaching up to 300 per episode. The impact of state normalization varied: some techniques improved performance, while others decreased it, with the Robust normalization proving particularly effective. In nearly all scenarios, RB datasets outperformed FP datasets across BC regularization and normalization settings, with the exception of Min-Max normalization, which consistently underperformed.
+
+\section{How did the analyses answer the central question?}
+The analyses show that even with BC decoupling, it is possible to produce competitive DQN+BC offline agents that achieve strong performance. Choosing an appropriate state normalization technique for the task can significantly improve learning outcomes, while other types may be detrimental. Finally, RB datasets collected during online training, which include sub-optimal state-action pairs, consistently outperform FP datasets generated by near-optimal policies, highlighting the importance of dataset composition in offline RL.
+
+ 
+\section{What does this answer tell us about the broader field?}
+Offline RL performance is strongly influenced by practical factors such as dataset composition, particularly the presence of sub-optimal state-action pairs, as well as state normalization and regularization strategies. Appropriate state normalization can significantly improve the performance and stability of deep offline RL agents, although its effectiveness depends on the chosen method and task. Regularization components such as BC can be decoupled from the main offline RL algorithm during training without sacrificing performance, enabling more specialized training procedures that may further improve overall agent effectiveness.

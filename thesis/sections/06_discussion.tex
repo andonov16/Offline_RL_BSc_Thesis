@@ -1,0 +1,54 @@
+\cleardoubleoddpage
+\chapter{Discussion}
+\label{app:discussion}
+
+This chapter summarizes the main findings and limitations of this work and discusses their implications for offline RL.
+
+
+\section{Decoupled BC and DQN+BC Training}
+In this work we explored a training strategy where the BC model is trained separately before being used in the DQN+BC framework and managed to train competitive agents for both supervised BC and DQN+BC approaches.
+
+Decoupling the training process introduced several practical challenges. The approach increased computational cost and implementation time and required the development of two separate training pipelines: one for supervised BC training and one for DQN+BC training. However, applying careful project organization and the use of reusable abstract components helped to reduce the required implementation time.
+
+At the same time, the decoupled approach provided several advantages. As discussed previously, BC and RL components could be tuned independently according to their specific requirements, including different batch sizes, pruning strategies, and training schedules. This separation removes the need to compromise between the objectives of supervised learning and TD-based learning, allowing each component to be optimized more effectively.
+
+
+
+\section{State Normalization}
+The experiments showed that state normalization can affect the performance of offline RL agents however, the effect depends on the algorithm and normalization strategy.
+
+For supervised BC models, normalization had a limited impact on performance. Max-Abs and Robust normalization slightly improved the results for models trained on the RB dataset, while models trained on the FP dataset were largely unaffected by normalization. This is likely because FP datasets already represent near-optimal behaviour, allowing BC models to learn an effective policy even without additional preprocessing.
+
+In contrast, state normalization proved significantly more beneficial for DQN+BC agents. Applying normalization improved performance in the live environment in several configurations. Robust and Standard normalization consistently produced strong results across different dataset types and regularization strengths.
+
+These findings suggest that state normalization can be an effective way to improve offline RL performance, particularly for TD-based methods, but the choice of normalization technique plays an important role.
+
+
+
+
+\section{Dataset Quality and Diversity}
+
+The experiments also confirmed previously reported observations regarding dataset composition in offline RL \cite{BC_ORL_only}, \cite{dataset_composition_rl_effects}.
+
+On the one hand, supervised BC models consistently performed better when trained on the FP dataset. Since BC directly imitates the observed behaviour, datasets containing predominantly optimal transitions allow the model to approximate the expert policy more accurately.
+
+On the other hand, DQN+BC agents generally performed better when trained on the RB dataset. These datasets contain a broader range of transitions, including sub-optimal and exploratory actions, which provide more informative training signals for TD-based learning. Including this wider distribution of state-action pairs helps reduce extrapolation errors and improves policy learning.
+
+These results highlight the importance of taking into account the dataset composition to the learning approach used.
+
+\section{Limitations}
+We acknowledge several limitations of this work that should be considered when interpreting the results.
+
+First, all experiments were conducted in a discrete action setting. The findings should be validated or disproved in continuous action environments to determine whether similar patterns are observed in algorithms such as TD3+BC \cite{fujimoto2021minimalist}.
+
+Second, the experiments were performed in a single environment. Evaluating these approaches across multiple environments would provide better generalization and stronger conclusions to the observed effects.
+
+Finally, the normalization analysis was limited to a small set of techniques and a single environment. While the results indicate that normalization can significantly influence offline RL performance, broader studies are needed to determine which methods are most effective in general.
+
+Additionally, future works may also investigate why DQN-only agents performed competitively under certain conditions and how this behaviour is connected with dataset composition and normalization strategies.
+
+
+
+\section{Source Code}
+ The full source code of this work can be found at \url{https://github.com/andonov16/Offline_RL_BSc_Thesis}.
+

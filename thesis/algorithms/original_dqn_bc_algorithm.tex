@@ -1,0 +1,17 @@
+\begin{algorithm}[t]
+\caption{Original DQN+BC algorithm on which used as baseline \cite{BCQ_benchmarking}.}
+\label{alg:bcq_original}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Batch $\mathcal{B}$, number of iterations $T$, target update rate, mini-batch size $N$, threshold $\tau$.
+\STATE Initialize Q-network $Q_\theta$, generative model $G_\omega$, and target network $Q_{\theta'}$ with $\theta' \leftarrow \theta$.
+\FOR{$t = 1$ to $T$}
+    \STATE Sample mini-batch $\mathcal{M}$ of $N$ transitions $(s,a,r,s')$ from $\mathcal{B}$.
+    \STATE $a' = \arg\max_{a'}\!\left[\frac{G_\omega(a'|s')}{\max_{\hat{a}} G_\omega(\hat{a}|s')} > \tau \right] Q_\theta(s',a')$
+    \STATE $\theta \leftarrow \arg\min_\theta \sum_{(s,a,r,s') \in \mathcal{M}} \ell_\kappa \big(r + \gamma Q_{\theta'}(s',a') - Q_\theta(s,a)\big)$
+    \STATE $\omega \leftarrow \arg\min_\omega - \sum_{(s,a)\in\mathcal{M}} \log G_\omega(a|s)$
+    \IF{$t \bmod \text{target\_update\_rate} = 0$}
+        \STATE $\theta' \leftarrow \theta$
+    \ENDIF
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
