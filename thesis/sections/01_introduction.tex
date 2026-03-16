@@ -36,7 +36,7 @@ BC is commonly used in two main ways in offline RL:
 \begin{enumerate}
     \item \textbf{Purely supervised policy learning:} BC treats the RL problem as a supervised learning task \cite{BC_ORL_only}. The agent imitates the expert policy using only the provided dataset transitions. No reward signals or TD updates are involved, and the agent learns a fixed policy that replicates the demonstrated behavior as closely as possible.
     
-    \item \textbf{Regularization for TD-based offline RL:} In more recent approaches, BC is used as a regularization mechanism for online deep RL algorithms adapted to offline setting. Methods like TD3 with Behavioral Cloning (TD3+BC) \cite{fujimoto2021minimalist} or Batch-Constrained Q-Learning (BCQ) \cite{BCQ_benchmarking} use a pretrained BC models to constrain the policy to remain close to the actions observed in the dataset. This regularization reduces the impact of extrapolation error by discouraging the agent from selecting out-of-distribution actions that may have overestimated values.
+    \item \textbf{Regularization for TD-based offline RL:} In more recent approaches, BC is used as a regularization mechanism for online deep RL algorithms adapted to offline setting. Methods like TD3 with Behavioral Cloning (TD3+BC) \cite{fujimoto2021minimalist} or Batch-Constrained Q-Learning (BCQ) \cite{BCQ_benchmarking} use BC models jointly trained with the Q-networks to constrain the policy to remain close to the actions observed in the dataset. This regularization reduces the impact of extrapolation error by discouraging the agent from selecting out-of-distribution actions that may have overestimated values.
 \end{enumerate}
 
 Both directions make BC a key tool for stabilizing learning and mitigating the challenges connected to offline RL.
@@ -58,7 +58,7 @@ Despite the progress in offline RL, several challenges remain that motivate this
     The structure and diversity of the dataset used for offline RL significantly influences performance \cite{dataset_composition_rl_effects}. Pure BC approaches benefit from datasets collected by near-optimal policies. In contrast, offline TD-based methods regularized with BC have been shown to benefit from datasets containing a broader range of transitions, including sub-optimal or exploratory actions.
 \end{enumerate}
 
-Addressing these three aspects may provide a deeper of the factors that influence the stability and performance of offline RL agents.
+Addressing these three aspects may provide a deeper understanding of the factors that influence the stability and performance of offline RL agents.
 
 
 

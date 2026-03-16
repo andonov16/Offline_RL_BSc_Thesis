@@ -59,8 +59,12 @@ To compare behaviour between the RB and FP datasets, we examined all continuous 
 
     \item \textbf{Orientation angle:} Means are near zero (RB: $0.0031$, FP: $-0.0005$), with FP showing tighter distributions (SD FP: $0.0583$ vs SD RB: $0.1385$). KDE plots indicate more stable lander orientation in FP datapoints.
 
-    \item \textbf{Angular velocity:} Both datasets have near-zero means, but FP shows significantly lower variance (SD FP: $0.0422$ vs SD RB: $0.0977$), suggesting smoother rotational behavior.
+    \item \textbf{Angular velocity:} Both datasets have near-zero means, but FP shows significantly lower variance (SD FP: $0.0422$ vs SD RB: $0.0977$), suggesting smoother rotational behaviour.
 \end{enumerate}
+
+
+
+The boxplots in Figure \ref{fig:rb_fp_boxlots} and KDE plots in Figure \ref{fig:rb_fp_univar} further illustrate that the FP dataset is more concentrated with tighter feature distributions and exhibits less variability than the RB dataset.
 
 \subsection{Reward}
 
@@ -75,8 +79,12 @@ The RB dataset has a negative mean reward ($-0.1799$), while the FP dataset has 
 \input{figures/data_exploration/rb_fp_univar}
 
 
-\noindent\textbf{IMPORTANT NOTE:} The state features and rewards are not independent and identically distributed (I.I.D). Many are functionally related - for example, angular velocity depends on $lv_x$ and $lv_y$. This is reflected in the correlation matrices (Figure~\ref{fig:correlation_matrices}), showing that several features are strongly correlated. This observation should be taken into consideration later on when we discuss deep learning model architectures.
+\noindent
+\begin{minipage}{\textwidth}
+\textbf{IMPORTANT NOTE:} The state features and rewards are not independent and identically distributed (I.I.D). Many are functionally related - for example, angular velocity depends on $lv_x$ and $lv_y$. This is reflected in the correlation matrices (Figure~\ref{fig:correlation_matrices}), showing that several features are strongly correlated. This observation should be taken into consideration later on when we discuss deep learning model architectures.
+\end{minipage}
 
+\input{figures/data_exploration/correlation_matrices}
 
 
 
@@ -124,8 +132,12 @@ For each dataset, multiple normalized versions of the state space are created to
 
 To understand which state dimensions provide the most information for action prediction, feature importance analysis was conducted on both the RB and FP datasets. For each dataset and normalization variant, a simple logistic regression classifier was trained. We chose logistic regression over tree-based methods because logistic regression classification is more similar to how FNNs handle states.
 
-Feature importance is measured as the absolute value of the learned logistic regression coefficients. Larger values suggest stronger influence on action predictions. It is important to note that these values provide a general prediction on how informative the corresponding features are and not a definitive ranking of relevance \cite{hooker2019benchmark}. In FNNs, nonlinear transformations in hidden layers can change the importance of given dfeatures during training.
+Feature importance is measured as the absolute value of the learned logistic regression coefficients. Larger values suggest stronger influence on action predictions. It is important to note that these values provide a general prediction on how informative the corresponding features are and not a definitive ranking of relevance \cite{hooker2019benchmark}. In FNNs, nonlinear transformations in hidden layers can change the importance of given features during training.
 
 
+The exact feature importance values for each normalization variant are shown in Figure~\ref{fig:rb_feature_importance} for the RB dataset and in Figure~\ref{fig:fp_feature_importance} for the FP dataset. Across both datasets, similar trends can be observed. The most influential features for action prediction are the binary landing leg indicators ($leg_1$, $leg_2$), followed by angular velocity and the vertical velocity component ($lv_y$). These features are directly related to the final stage of the landing process and thus strongly influence the decisions made by the online DQN agents. In particular, ground contact indicated by $leg_1$ and $leg_2$ corresponds to critical transitions in the environment, such as successful landing or crashing, which are associated with large changes in the reward signal.
+
+For the Min-Max, Max-Abs, and Standard normalization variants, the current reward is among the most influential features. In contrast, the Robust normalization variants place the greatest emphasis on the landing leg indicators. This behaviour can be explained by two factors. First, by definition of the environment, contact with the ground is highly informative and closely aligned with the objective of the online policies that the BC models aim to imitate. Second, as we previously discussed, Robust normalization reduces sensitivity to outliers resulting in reduced relative variance of continuous state variables. Since $leg_1$ and $leg_2$ are binary indicators, their sharp transition from $0$ (no contact) to $1$ (ground contact) remains unchanged, making them comparatively more important features for the classifier.
 
 
+Overall, the most informative features for imitating the behaviour of the original DQN agents are those that characterize the lander's dynamics near the ground and during the final stage of the landing process.

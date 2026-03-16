@@ -11,7 +11,12 @@ Secondly, after a BC model has fully converged, its frozen version is used as a 
 
 The offline RL algorithm used in this work is based on the approach described in \cite{BCQ_benchmarking}. There DQN is combined with a generative model, which is used together with a threshold parameter $\tau$ to filter and restrict the set of actions considered during Q-network training to those that are sufficiently likely under the behaviour policy. In this work, the generative model is implemented as a supervised BC classifier.
 
-The exact formulation of the algorithm used in \cite{BCQ_benchmarking} is shown in Algorithm~\ref{alg:bcq_original}. Throughout this work, all offline RL algorithms derived from or inspired by Algorithm~\ref{alg:bcq_original}, which combine DQN with BC=based regularization, are referred as DQN+BC.
+The exact formulation of the algorithm proposed in \cite{BCQ_benchmarking} is shown in Algorithm~\ref{alg:bcq_original}. In the original work, the method is referred to as BCQ. BCQ combines DQN with a generative model that approximates the behaviour policy and restricts the set of candidate actions during Q-value updates. Both the DQN and behaviour policy are trained simultaneously. 
+
+
+In this work, we use the same general principle of constraining the action space using a behaviour policy models. However, instead of training a generative model jointly with the Q-network, we employ a separately trained BC classifier as the behaviour policy estimator. The pretrained BC model is then used during offline training to regularize action selection.
+
+To clearly distinguish the approach used in this work from the original BCQ formulation, we refer to all algorithms that combine a DQN agent with a pretrained BC-based regularization mechanism as DQN+BC. This terminology emphasizes the two main components of the method: the Q-learning network and the pretrained BC model used to guide the policy during offline training while distinguishing it from the original approach defined by \cite{BCQ_benchmarking}.
 
 
 
@@ -35,17 +40,17 @@ Dropout regularization is applied after each hidden layer, more precisely after 
 To improve training stability, Layer Normalization is applied exactly once at the input layer, before the activation function. Layer Normalization is preferred over Batch Normalization because the state features are not I.I.D., as discussed in Chapter~\ref{app:Datasets_and_the_Environment}. Using Batch Normalization in this setting leads to lower performance, likely due to correlations between state variables and the episodic structure of the data.
 
 
-To prevent unstable gradients, network weights are initialized using He/Kaiming initialization \cite{he_initialization_weights}, centering the initial weights around zero, which prevents the exploding gradients problem. The supervised learning objective is optimized using the categorical Cross-Entropy loss, which measures the difference between predicted action logits and the true action labels from the dataset.
+To prevent unstable gradients, network weights are initialized using He/Kaiming initialization \cite{he_initialization_weights}, centering the initial weights around zero, which prevents the exploding gradients problem. The supervised learning objective is optimized using the categorical Cross-Entropy loss, which minimizes the negative log-likelihood of true action labels as assigned by the model.
 
 
 
 
 
 
-\section{The DQN+BC Algorithm}
+\section{The BCQ Algorithm}
 \label{sec:the_DQN_BC_algorithm}
 
-A DQN+BC agent learns a Q-network that takes a given state $s$ as input and outputs Q-values for all possible discrete actions in that state.
+A BCQ agent learns a Q-network that takes a given state $s$ as input and outputs Q-values for all possible discrete actions in that state.
 
 Following the design choice shown in \cite{BCQ_benchmarking}, we train a single Q-network that outputs Q-values for all actions simultaneously, instead of training separate Q-networks for each action. This design simplifies the implementation and allows for more efficient optimization.
 

@@ -3,10 +3,10 @@
 \label{alg:bcq_normalized}
 \begin{algorithmic}[1]
 \STATE \textbf{Input:} Batch $\mathcal{B}$, number of iterations $T$, target update rate, mini-batch size $N$, threshold $\tau$, generative model $G_\omega$.
-\STATE Initialize Q-network $Q_\theta$, target network $Q_{\theta'}$ with $\theta' \leftarrow \theta$, and state normalization model $\mathcal{N}$.
+\STATE Initialize Q-network $Q_\theta$, target network $Q_{\theta'}$ with $\theta' \leftarrow \theta$, and state normalization model $\phi$.
 \FOR{$t = 1$ to $T$}
     \STATE Sample mini-batch $\mathcal{M}$ of $N$ transitions $(s,a,r,s')$ from $\mathcal{B}$.
-    \STATE Compute normalized states: $\tilde{s} = \mathcal{N}(s)$, $\tilde{s}' = \mathcal{N}(s')$.
+    \STATE Compute normalized states: $\tilde{s} = \phi(s)$, $\tilde{s}' = \phi(s')$.
     \STATE $a' = \arg\max_{a'} \mathbb{I}\!\Big[\frac{G_\omega(a'|\tilde{s}')}{\max_{\hat{a}} G_\omega(\hat{a}|\tilde{s}')} > \tau \Big] \, Q_\theta(\tilde{s}',a')$
     \STATE $\theta \leftarrow \arg\min_\theta \sum_{(\tilde{s},a,r,\tilde{s}') \in \mathcal{M}} \ell_\kappa \Big(r + \gamma Q_{\theta'}(\tilde{s}',a') - Q_\theta(\tilde{s},a)\Big)$
 
